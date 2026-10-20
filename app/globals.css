@@ -20,7 +20,7 @@
 }
 
 :root {
-  --bg: #ffffff;
+  --bg: #fdf8e2;
   --surface: #ffffff;
   --fg: #000000;
   --accent: #cf5527;
@@ -29,13 +29,25 @@
   --table-head: #80a32f;
   --table-text: #673c34;
   --input: #e7e3d0;
+  --mifi-sidebar-bg: #ffffff;
+  --mifi-sidebar-text: #2b2b2b;
+  --mifi-sidebar-text-muted: #6b6b6b;
+  --mifi-border: #e3dcc8;
 }
 
 .dark {
-  --bg: #000000;
-  --surface: #1f1c1c;
-  --fg: #ffffff;
+  --bg: #1f1c16;
+  --surface: #26221a;
+  --fg: #f1ece0;
+  --accent: #f76f54;
+  --primary: #f76f54;
+  --secondary: #f7e289;
+  --table-head: #47622a;
   --table-text: #ffffff;
+  --input: #3a3426;
+
+  --mifi-sidebar-bg: #26221a;
+  --mifi-border: #3a3426;
 }
 
 
