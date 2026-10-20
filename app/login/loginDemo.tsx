@@ -5,6 +5,7 @@ import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import Image from "next/image";
 
 type LoginDemoProps = {
   user: User | null;
@@ -170,7 +171,7 @@ export default function LoginDemo({ user }: LoginDemoProps) {
           ) : step === "welcome" ? (
             /* ---------- Welcome ---------- */
             <>
-              <h1 className="mb-8 text-xl font-semibold">Welcome To Namename!</h1>
+              <h1 className="mb-8 text-xl font-semibold">Welcome To MIFI!</h1>
               <button
                 type="button"
                 onClick={() => choose("login")}
@@ -286,7 +287,16 @@ export default function LoginDemo({ user }: LoginDemoProps) {
         </div>
       </section>
 
-      <aside className="hidden flex-1 bg-[#d9d9d9] lg:block" aria-hidden="true" />
+        <aside className="relative hidden flex-1 lg:block" aria-hidden="true">
+        <Image
+          src="/books_finance.jpg"
+          alt=""
+          fill
+          sizes="40vw"
+          priority
+          className="object-cover"
+        />
+      </aside>
     </div>
     // ====================== FRONTEND UI END ======================
   );
