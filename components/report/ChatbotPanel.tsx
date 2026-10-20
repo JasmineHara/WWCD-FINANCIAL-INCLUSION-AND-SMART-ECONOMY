@@ -11,7 +11,7 @@
 "use client";
 
 import { useState } from "react";
-import { Maximize2, Minimize2, Send } from "lucide-react";
+import { Maximize2, Minimize2, Send, Bot, User } from "lucide-react";
 import type { ChatMessage } from "@/types/tracker";
 
 export function ChatbotPanel({ reportId }: { reportId: string }) {
@@ -42,6 +42,17 @@ export function ChatbotPanel({ reportId }: { reportId: string }) {
       if (data.success && data.message) {
         setMessages((prev) => [...prev, data.message]);
       }
+    } catch {
+      // Fallback AI response for testing / non-backend state
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: "Connect your AI backend endpoint (/api/tracker/chat) to answer questions about this report.",
+          created_at: new Date().toISOString(),
+        },
+      ]);
     } finally {
       setSending(false);
     }
@@ -49,50 +60,91 @@ export function ChatbotPanel({ reportId }: { reportId: string }) {
 
   return (
     <div
-      className={`flex flex-col rounded-md bg-white ${expanded ? "fixed inset-6 z-40 shadow-2xl" : "h-full"}`}
-      style={{ border: "1px solid var(--mifi-border)" }}
+      className={`flex flex-col rounded-3xl bg-surface transition-all ${
+        expanded ? "fixed inset-6 z-50 shadow-2xl" : "h-full"
+      }`}
+      style={{ border: "1px solid var(--mifi-border, #e7e3d0)" }}
     >
-      <div className="flex items-center justify-end px-3 pt-3">
-        <button onClick={() => setExpanded((v) => !v)} aria-label="Toggle chatbot size" className="opacity-60 hover:opacity-100">
+      {/* Header bar matching the main assistant header */}
+      <div 
+        className="flex items-center justify-between px-5 py-3.5 border-b" 
+        style={{ borderColor: "var(--mifi-border, #e7e3d0)" }}
+      >
+        <div className="flex items-center gap-2">
+          <div className="h-7 w-7 rounded-full bg-amber-600 text-white flex items-center justify-center shrink-0">
+            <Bot className="h-4 w-4" />
+          </div>
+          <span className="text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200">
+            Report AI Assistant
+          </span>
+        </div>
+
+        <button 
+          onClick={() => setExpanded((v) => !v)} 
+          aria-label="Toggle chatbot size" 
+          className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition p-1"
+        >
           {expanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
         </button>
       </div>
 
-      <div className="flex-1 space-y-2 overflow-y-auto px-4 py-3">
+      {/* Messages Scroll Area */}
+      <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3 text-xs">
         {messages.length === 0 && (
-          <p className="text-xs text-gray-400">Ask me anything about this report — e.g. &quot;why did expenses go up?&quot;</p>
+          <div className="text-center py-8 px-4 text-gray-400 space-y-1">
+            <Bot className="h-8 w-8 mx-auto text-amber-600/60 mb-2" />
+            <p className="font-semibold text-gray-600 dark:text-gray-300">Got questions about this report?</p>
+            <p className="text-[11px]">Ask anything — e.g., &quot;Why did supplier expenses increase?&quot;</p>
+          </div>
         )}
+        
         {messages.map((m) => (
           <div
             key={m.id}
-            className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${m.role === "user" ? "ml-auto" : ""}`}
-            style={{
-              backgroundColor: m.role === "assistant" ? "var(--mifi-accent-secondary)" : "#e5e5e5",
-              color: "#2b2b2b",
-            }}
+            className={`flex gap-2.5 ${m.role === "user" ? "justify-end" : "justify-start"}`}
           >
-            {m.content}
+            {m.role === "assistant" && (
+              <div className="h-6 w-6 rounded-full bg-amber-600 text-white flex items-center justify-center shrink-0 mt-0.5">
+                <Bot className="h-3.5 w-3.5" />
+              </div>
+            )}
+            
+            <div
+              className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs shadow-sm ${
+                m.role === "user"
+                  ? "bg-[#4a6741] text-white rounded-br-none"
+                  : "bg-black/5 dark:bg-zinc-800 text-gray-900 dark:text-white rounded-bl-none"
+              }`}
+            >
+              {m.content}
+            </div>
+
+            {m.role === "user" && (
+              <div className="h-6 w-6 rounded-full bg-[#f76f54] text-white flex items-center justify-center shrink-0 mt-0.5">
+                <User className="h-3.5 w-3.5" />
+              </div>
+            )}
           </div>
         ))}
       </div>
 
-      <div className="flex items-center gap-2 border-t p-3" style={{ borderColor: "var(--mifi-border)" }}>
+      {/* Input area matching main chat style */}
+      <div className="flex items-center gap-2 border-t p-3" style={{ borderColor: "var(--mifi-border, #e7e3d0)" }}>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-          placeholder="Ask a question…"
-          className="flex-1 rounded-full border px-4 py-2 text-sm outline-none"
-          style={{ borderColor: "var(--mifi-border)" }}
+          placeholder="Ask a question about this report..."
+          className="flex-1 rounded-xl border px-3.5 py-2 text-xs bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+          style={{ borderColor: "var(--mifi-border, #e7e3d0)" }}
         />
         <button
           onClick={sendMessage}
-          disabled={sending}
+          disabled={sending || !input.trim()}
           aria-label="Send"
-          className="flex h-9 w-9 items-center justify-center rounded-full disabled:opacity-60"
-          style={{ backgroundColor: "var(--mifi-accent-primary)" }}
+          className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#f76f54] text-white transition hover:brightness-95 disabled:opacity-40 shrink-0"
         >
-          <Send size={16} color="white" />
+          <Send size={14} color="white" />
         </button>
       </div>
     </div>
