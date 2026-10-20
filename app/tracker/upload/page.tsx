@@ -5,11 +5,50 @@
  * (states, API call, success/error modal) lives in UploadDropzone; this
  * page is just the shell (Sidebar/TopBar + heading) around it.
  */
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/tracker/Sidebar";
 import { TopBar } from "@/components/tracker/TopBar";
 import { UploadDropzone } from "@/components/tracker/UploadDropzone";
 
 export default function UploadDocumentPage() {
+  const router = useRouter();
+  const [isUploading, setIsUploading] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+
+  const handleUpload = async (files: File[]) => {
+    const file = files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setStatus(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/tracker/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error ?? "Upload failed.");
+      }
+
+      setStatus("Upload successful. Redirecting to tracker...");
+      setTimeout(() => router.push("/tracker"), 800);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Upload failed.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div className="flex">
       <Sidebar />
@@ -23,7 +62,17 @@ export default function UploadDocumentPage() {
             Upload your financial statements (CSV, XLS, PDF) to import data into your tracker.
           </p>
 
-          <UploadDropzone />
+          <div className="mt-6">
+            <UploadDropzone onUpload={handleUpload} isUploading={isUploading} />
+          </div>
+
+          {status && (
+            <p
+              className={`mt-4 text-sm ${status.startsWith("Upload successful") ? "text-green-600" : "text-red-600"}`}
+            >
+              {status}
+            </p>
+          )}
         </main>
       </div>
     </div>

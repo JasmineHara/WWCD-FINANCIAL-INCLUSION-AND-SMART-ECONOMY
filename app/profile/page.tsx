@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TopBar } from "@/components/tracker/TopBar";
 import {
@@ -30,7 +30,7 @@ interface UserProfile {
   bio: string;
 }
 
-export default function ProfilePage() {
+function ProfilePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const viewUserId = searchParams.get("id"); // URL param for viewing mentor/peer profiles
@@ -347,5 +347,13 @@ export default function ProfilePage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading profile...</div>}>
+      <ProfilePageContent />
+    </Suspense>
   );
 }
