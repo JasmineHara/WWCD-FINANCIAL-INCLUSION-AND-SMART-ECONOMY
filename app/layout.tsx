@@ -17,20 +17,21 @@ const andika = Andika({
 });
 
 export const metadata: Metadata = {
-  title: "namename",
+  title: "mifi",
   description: "Financial data tracking for micro-SMEs",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning className={`${poppins.variable} ${andika.variable} h-full antialiased`}>
+      <head>
+        <Script id="theme-init" strategy="beforeInteractive">
+          {`try{if(localStorage.getItem("theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}`}
+        </Script>
+      </head>
       <body className="min-h-full font-sans">
         <AppShell>{children}</AppShell>
       </body>
-      <Script id="theme-init" strategy="beforeInteractive">
-        {`try{if(localStorage.getItem("theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}`}
-      </Script>
     </html>
   );
 }
-

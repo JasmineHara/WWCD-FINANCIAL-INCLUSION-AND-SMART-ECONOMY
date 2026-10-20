@@ -171,7 +171,7 @@ export default function LoginDemo({ user }: LoginDemoProps) {
           ) : step === "welcome" ? (
             /* ---------- Welcome ---------- */
             <>
-              <h1 className="mb-8 text-xl font-semibold">Welcome To MIFI!</h1>
+              <h1 className="mb-8 text-xl font-semibold">Welcome To mifi!</h1>
               <button
                 type="button"
                 onClick={() => choose("login")}
