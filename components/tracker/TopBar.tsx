@@ -1,11 +1,16 @@
-type TopBarProps = {
+interface TopBarProps {
   title: string;
-};
+}
 
 export function TopBar({ title }: TopBarProps) {
   return (
-    <header className="border-b bg-white px-8 py-4">
-      <h1 className="text-xl font-semibold">{title}</h1>
-    </header>
+    <div
+      className="flex items-center justify-between px-8 py-5 border-b"
+      style={{ borderColor: "var(--mifi-border)" }}
+    >
+      <h1 className="text-xl font-bold" style={{ color: "var(--mifi-sidebar-text)" }}>
+        {title}
+      </h1>
+    </div>
   );
 }
