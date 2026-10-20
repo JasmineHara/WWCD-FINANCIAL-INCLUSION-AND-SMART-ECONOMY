@@ -1,0 +1,65 @@
+/**
+ * app/tracker/theme.css
+ * ------------------------------------------------------------------
+ * 🎨 FRONTEND / DESIGN — EDIT THIS FILE FREELY 🎨
+ * ------------------------------------------------------------------
+ * All colors used across the Tracker + Upload + Report pages are CSS
+ * variables defined here, matched to the provided mifi UI mockups.
+ * Change a value here and it updates everywhere — no need to hunt
+ * through component files for hex codes.
+ *
+ * Import this once in app/tracker/layout.tsx (already done for you).
+ */
+
+:root {
+  /* Page background */
+  --mifi-bg: #faf3e0;
+
+  /* Sidebar */
+  --mifi-sidebar-bg: #ffffff;
+  --mifi-sidebar-text: #2b2b2b;
+  --mifi-sidebar-text-muted: #6b6b6b;
+
+  /* "My inventory" header bar (dark olive green) */
+  --mifi-table-header-bg: #4f5d2f;
+  --mifi-table-header-text: #ffffff;
+
+  /* Table column header row (lighter olive green) */
+  --mifi-table-subheader-bg: #93a84a;
+  --mifi-table-subheader-text: #2b2b2b;
+
+  /* AI summary strip under the table */
+  --mifi-ai-summary-bg: #93a84a;
+  --mifi-ai-summary-text: #ffffff;
+
+  /* "My Receipts" bar (maroon) */
+  --mifi-receipts-bg: #5e2e2e;
+  --mifi-receipts-text: #ffffff;
+
+  /* Primary action buttons (terracotta) e.g. "+ Upload new document" */
+  --mifi-accent-primary: #e0744f;
+  --mifi-accent-primary-text: #ffffff;
+
+  /* Secondary action buttons (warm yellow) e.g. "View Report", "Become a Mentor" */
+  --mifi-accent-secondary: #f0c869;
+  --mifi-accent-secondary-text: #2b2b2b;
+
+  /* Status dot / floating action circle (orange) */
+  --mifi-fab-bg: #d9643a;
+
+  /* Borders / dividers */
+  --mifi-border: #e3dcc8;
+
+  /* Font */
+  --mifi-font-sans: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+/* Dark mode — the moon icon in the top bar toggles this class on <html>.
+   Wire it up in components/tracker/TopBar.tsx (already stubbed there). */
+html.dark {
+  --mifi-bg: #1f1c16;
+  --mifi-sidebar-bg: #26221a;
+  --mifi-sidebar-text: #f1ece0;
+  --mifi-sidebar-text-muted: #a69f8e;
+  --mifi-border: #3a3426;
+}
