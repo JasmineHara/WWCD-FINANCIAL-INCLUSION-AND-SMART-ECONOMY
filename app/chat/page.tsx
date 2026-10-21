@@ -1,10 +1,8 @@
-// AI Chatbox - Keisha
-
 "use client";
 
 import { useState, useRef, useEffect } from "react";
 import { TopBar } from "@/components/tracker/TopBar";
-import { Send, Bot, User, Sparkles, RefreshCw } from "lucide-react";
+import { Send, Bot, User, Sparkles } from "lucide-react";
 
 interface ChatMessage {
   id: string;
@@ -29,7 +27,7 @@ export default function AIChatPage() {
     if (!query.trim()) return;
 
     const userMsg: ChatMessage = {
-      id: Date.now().toString(),
+      id: `${crypto.randomUUID()}-user`,
       sender: "user",
       text: query,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),

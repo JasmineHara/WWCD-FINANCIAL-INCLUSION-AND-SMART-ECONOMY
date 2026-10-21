@@ -13,8 +13,9 @@ import type { ReportData, ReportPeriod } from "@/types/tracker";
 function ReportContent() {
   const searchParams = useSearchParams();
   const period = (searchParams.get("period") as ReportPeriod) || "monthly";
-  const reportId = searchParams.get("id") || "default-report";
+  const queryReportId = searchParams.get("id");
 
+  const [reportId, setReportId] = useState<string | null>(queryReportId ?? null);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +39,12 @@ function ReportContent() {
         }
 
         const report = data.report ?? null;
+        setReportId(report?.id ?? queryReportId ?? null);
+
+        if (!report?.id) {
+          throw new Error("The generated report is missing its saved ID. Please try again.");
+        }
+
         setReportData({
           business_name: "My Business",
           period,
@@ -178,10 +185,10 @@ function ReportContent() {
 
         <div className="lg:col-span-5 sticky top-6 space-y-6 flex flex-col h-[550px]">
           <div className="flex-1">
-            <ChatbotPanel reportId={reportId} />
+            {reportId ? <ChatbotPanel reportId={reportId} /> : <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">Waiting for the saved report ID before the AI assistant can load.</div>}
           </div>
           <div>
-            <DownloadReportButton reportId={reportId} />
+            {reportId ? <DownloadReportButton reportId={reportId} /> : null}
           </div>
         </div>
       </main>

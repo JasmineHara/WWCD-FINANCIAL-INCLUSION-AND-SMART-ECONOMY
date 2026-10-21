@@ -19,7 +19,7 @@ const links = [
   { href: "/tracker", label: "Data Tracker", icon: Database },
   { href: "/tips", label: "Tip of the Day", icon: Lightbulb },
   { href: "/community", label: "Community Forum", icon: Users },
-  { href: "/mentor", label: "Find a Mentor", icon: Search },
+  { href: "/mentor/find", label: "Find a Mentor", icon: Search },
 ];
 
 type SidebarProps = {
@@ -84,9 +84,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         })}
       </nav>
 
-      {/* TODO: route not final, agree on /mentor/become with the team */}
       <Link
-        href="/mentor/become"
+        href="/mentor"
         title={collapsed ? "Become a Mentor" : undefined}
         className={`mt-8 flex items-center justify-center rounded-lg bg-light-yellow text-lg text-black transition hover:brightness-95 ${
           collapsed ? "p-3" : "px-4 py-3"

@@ -10,23 +10,43 @@
  */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Maximize2, Minimize2, Send, Bot, User } from "lucide-react";
 import type { ChatMessage } from "@/types/tracker";
+
+const THINKING_STAGES = [
+  "Checking your report...",
+  "Comparing the trends...",
+  "Drafting a recommendation...",
+];
 
 export function ChatbotPanel({ reportId }: { reportId: string }) {
   const [expanded, setExpanded] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [thinkingStage, setThinkingStage] = useState(0);
+
+  useEffect(() => {
+    if (!sending) {
+      setThinkingStage(0);
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setThinkingStage((prev) => (prev + 1) % THINKING_STAGES.length);
+    }, 900);
+
+    return () => window.clearInterval(interval);
+  }, [sending]);
 
   async function sendMessage() {
     if (!input.trim() || sending) return;
     const question = input.trim();
     setInput("");
     setSending(true);
+    setThinkingStage(0);
 
-    // Optimistically show the user's message.
     setMessages((prev) => [
       ...prev,
       { id: crypto.randomUUID(), role: "user", content: question, created_at: new Date().toISOString() },
@@ -38,18 +58,34 @@ export function ChatbotPanel({ reportId }: { reportId: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reportId, question }),
       });
-      const data = await res.json();
-      if (data.success && data.message) {
-        setMessages((prev) => [...prev, data.message]);
+
+      let data: { success?: boolean; message?: ChatMessage; error?: string } | null = null;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
       }
-    } catch {
-      // Fallback AI response for testing / non-backend state
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || "The AI assistant could not review this report right now.");
+      }
+
+      if (data.message) {
+        const assistantMessage = data.message;
+        setMessages((prev) => [...prev, assistantMessage]);
+      }
+    } catch (error) {
+      const errorText =
+        error instanceof Error && error.message
+          ? error.message
+          : "The AI assistant could not review this report right now.";
+
       setMessages((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: "Connect your AI backend endpoint (/api/tracker/chat) to answer questions about this report.",
+          content: errorText,
           created_at: new Date().toISOString(),
         },
       ]);
@@ -65,9 +101,8 @@ export function ChatbotPanel({ reportId }: { reportId: string }) {
       }`}
       style={{ border: "1px solid var(--mifi-border, #e7e3d0)" }}
     >
-      {/* Header bar matching the main assistant header */}
-      <div 
-        className="flex items-center justify-between px-5 py-3.5 border-b" 
+      <div
+        className="flex items-center justify-between px-5 py-3.5 border-b"
         style={{ borderColor: "var(--mifi-border, #e7e3d0)" }}
       >
         <div className="flex items-center gap-2">
@@ -79,16 +114,15 @@ export function ChatbotPanel({ reportId }: { reportId: string }) {
           </span>
         </div>
 
-        <button 
-          onClick={() => setExpanded((v) => !v)} 
-          aria-label="Toggle chatbot size" 
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          aria-label="Toggle chatbot size"
           className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition p-1"
         >
           {expanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
         </button>
       </div>
 
-      {/* Messages Scroll Area */}
       <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3 text-xs">
         {messages.length === 0 && (
           <div className="text-center py-8 px-4 text-gray-400 space-y-1">
@@ -97,7 +131,7 @@ export function ChatbotPanel({ reportId }: { reportId: string }) {
             <p className="text-[11px]">Ask anything — e.g., &quot;Why did supplier expenses increase?&quot;</p>
           </div>
         )}
-        
+
         {messages.map((m) => (
           <div
             key={m.id}
@@ -108,7 +142,7 @@ export function ChatbotPanel({ reportId }: { reportId: string }) {
                 <Bot className="h-3.5 w-3.5" />
               </div>
             )}
-            
+
             <div
               className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs shadow-sm ${
                 m.role === "user"
@@ -126,16 +160,30 @@ export function ChatbotPanel({ reportId }: { reportId: string }) {
             )}
           </div>
         ))}
+
+        {sending && (
+          <div className="flex items-center gap-2 rounded-2xl bg-black/5 px-3 py-2 text-[11px] text-gray-600 dark:text-gray-300">
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-600 text-white">
+              <Bot className="h-3 w-3 animate-pulse" />
+            </div>
+            <span>{THINKING_STAGES[thinkingStage]}</span>
+            <span className="flex gap-1">
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-500 [animation-delay:0ms]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-500 [animation-delay:150ms]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-500 [animation-delay:300ms]" />
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Input area matching main chat style */}
       <div className="flex items-center gap-2 border-t p-3" style={{ borderColor: "var(--mifi-border, #e7e3d0)" }}>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           placeholder="Ask a question about this report..."
-          className="flex-1 rounded-xl border px-3.5 py-2 text-xs bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+          disabled={sending}
+          className="flex-1 rounded-xl border px-3.5 py-2 text-xs bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
           style={{ borderColor: "var(--mifi-border, #e7e3d0)" }}
         />
         <button

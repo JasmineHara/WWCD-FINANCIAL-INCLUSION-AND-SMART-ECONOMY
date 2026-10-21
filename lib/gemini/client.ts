@@ -1,5 +1,20 @@
 import { GoogleGenAI } from "@google/genai";
 import type { ReportPeriod, Transaction } from "@/types/tracker";
+import { buildSystemPrompt, buildUserPrompt, type AdviceMode } from "./prompts";
+
+const GEMINI_MODEL = "gemini-3.8-flash";
+const GEMINI_TIMEOUT_MS = 15000;
+
+async function withGeminiTimeout<T>(operation: Promise<T>, timeoutMs = GEMINI_TIMEOUT_MS): Promise<T> {
+  return await Promise.race([
+    operation,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`Gemini API request timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+    }),
+  ]);
+}
 
 function normalizeTransactionAmount(tx: Transaction) {
   const raw = tx.amount ?? tx.price ?? tx.value ?? 0;
@@ -67,18 +82,13 @@ function buildFinancialMetrics(transactions: Transaction[], period: ReportPeriod
   };
 }
 
-function buildFallbackReport(transactions: Transaction[], period: ReportPeriod) {
-  const { metrics, breakdown, insights, summary } = buildFinancialMetrics(transactions, period);
-
-  return {
-    period,
-    summary,
-    insights,
-    metrics,
-    breakdown,
-    generated_at: new Date().toISOString(),
-  };
-}
+type AdvisorReport = {
+  period?: string;
+  summary?: string;
+  insights?: string[];
+  metrics?: Record<string, number>;
+  breakdown?: Array<{ category: string; amount: number }>;
+};
 
 export async function generateReportFromTransactions(
   transactions: Transaction[],
@@ -122,10 +132,12 @@ export async function generateReportFromTransactions(
 
     const prompt = `You are a financial analyst. Based only on the following transactions, calculate revenue, expenses, and net profit in MYR. Return ONLY valid JSON with exact fields: summary, insights, metrics, breakdown. metrics must include total_revenue, revenue_change_pct, total_expenses, expenses_change_pct, net_profit, net_profit_change_pct. breakdown is an array of {category, amount}. Use the exact list: ${JSON.stringify(summaryPayload)}`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: prompt,
-    });
+    const response = await withGeminiTimeout(
+      ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: prompt,
+      })
+    );
 
     const rawText = String(response.text ?? "").trim();
     const cleaned = rawText.replace(/```json|```/gi, "").trim();
@@ -188,14 +200,110 @@ export async function askChatbot(
       : "No transaction context is available.";
 
     const conversationHistory = Array.isArray(history) ? JSON.stringify(history) : "";
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: `You are a financial assistant. Use the context below to answer the user's question. Context: ${context}. Conversation history: ${conversationHistory}. User question: ${prompt}`,
-    });
+    const response = await withGeminiTimeout(
+      ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: `You are a financial assistant. Use the context below to answer the user's question. Context: ${context}. Conversation history: ${conversationHistory}. User question: ${prompt}`,
+      })
+    );
 
     return String(response.text ?? "I couldn't generate a response right now.");
   } catch (error) {
     console.error("Gemini chatbot failed:", error);
     return "I could not access the live AI service right now, but the latest data is still available in your report.";
+  }
+}
+
+export async function askAdvisor(params: {
+  question: string;
+  report: AdvisorReport;
+  history?: { role: string; content: string }[];
+  mode?: AdviceMode;
+}): Promise<string> {
+  const { question, report, history = [], mode = "general" } = params;
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return "Gemini API key is not configured yet, so a live assistant response is unavailable.";
+  }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+
+    const compactHistory = history
+      .slice(-6)
+      .filter((m) => typeof m?.content === "string" && m.content.trim())
+      .map((m) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        content: String(m.content).slice(0, 600),
+      }));
+
+    const reportContext = {
+      period: report.period,
+      summary: report.summary,
+      insights: Array.isArray(report.insights) ? report.insights.slice(0, 3) : [],
+      metrics: report.metrics,
+      breakdown: Array.isArray(report.breakdown) ? report.breakdown.slice(0, 5) : [],
+    };
+
+    const contents = [
+      ...compactHistory.map((m) => ({
+        role: m.role,
+        parts: [{ text: m.content }],
+      })),
+      {
+        role: "user",
+        parts: [{ text: buildUserPrompt(question, reportContext) }],
+      },
+    ];
+
+    const response = await withGeminiTimeout(
+      ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents,
+        config: {
+          systemInstruction: buildSystemPrompt(mode),
+          temperature: 0.2,
+          maxOutputTokens: 220,
+          thinkingConfig: {
+            thinkingBudget: 128,
+          }
+        },
+      })
+    );
+
+    return String(response.text ?? "I couldn't generate a response right now.");
+  } catch (error) {
+    const err = error as {
+      status?: number;
+      code?: number | string;
+      name?: string;
+      message?: string;
+      details?: unknown;
+      cause?: unknown;
+    };
+
+    const errorSummary = {
+      name: err?.name,
+      status: err?.status,
+      code: err?.code,
+      message: err?.message,
+      details: err?.details,
+      cause: err?.cause,
+      raw: error,
+    };
+
+    if (err?.status === 429) {
+      console.error("Gemini advisor failed: rate limited.", errorSummary);
+      return "The AI is a bit busy right now. Please try again in a moment.";
+    }
+
+    if (err?.status === 401 || err?.status === 403) {
+      console.error("Gemini advisor failed: invalid or missing API key.", errorSummary);
+      return "The AI assistant is not configured correctly yet. Please check the Gemini API key.";
+    }
+
+    console.error("Gemini advisor failed with full details:", errorSummary);
+    return `Gemini AI error: ${err?.message ?? "Unknown Gemini error"}. Please check the API key and request payload.`;
   }
 }
