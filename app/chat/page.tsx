@@ -26,34 +26,58 @@ export default function AIChatPage() {
 
   const handleSendMessage = async (textToSend?: string) => {
     const query = textToSend || input;
-    if (!query.trim()) return;
+    if (!query.trim() || isTyping) return;
+
+    const now = () =>
+      new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
       sender: "user",
       text: query,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      timestamp: now(),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    const aiId = (Date.now() + 1).toString();
+    const history = [...messages, userMsg];
+
+    setMessages([...history, { id: aiId, sender: "ai", text: "", timestamp: now() }]);
     if (!textToSend) setInput("");
     setIsTyping(true);
 
     try {
-      // TODO: Replace with real backend streaming endpoint (e.g., fetch('/api/ai/chat'))
-      // Simulating a clean delay before backend connection
-      setTimeout(() => {
-        const aiMsg: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          sender: "ai",
-          text: "meow",
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        };
-        setMessages((prev) => [...prev, aiMsg]);
-        setIsTyping(false);
-      }, 1000);
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: history.map(({ sender, text }) => ({ sender, text })),
+        }),
+      });
+
+      if (!res.ok || !res.body) throw new Error(`Status ${res.status}: ${await res.text()}`);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        fullText += decoder.decode(value, { stream: true });
+        setMessages((prev) =>
+          prev.map((m) => (m.id === aiId ? { ...m, text: fullText } : m))
+        );
+      }
     } catch (error) {
       console.error("AI Chat Error:", error);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === aiId
+            ? { ...m, text: "Sorry, something went wrong. Please try again." }
+            : m
+        )
+      );
+    } finally {
       setIsTyping(false);
     }
   };
@@ -104,7 +128,7 @@ export default function AIChatPage() {
               </div>
             </div>
           ) : (
-            messages.map((msg) => (
+            messages.filter((msg) => msg.text).map((msg) => (
               <div
                 key={msg.id}
                 className={`flex gap-3 ${
