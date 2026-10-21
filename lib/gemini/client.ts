@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import type { ReportPeriod, Transaction } from "@/types/tracker";
 import { buildSystemPrompt, buildUserPrompt, type AdviceMode } from "./prompts";
 
-const GEMINI_MODEL = "gemini-3.8-flash";
+const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_TIMEOUT_MS = 15000;
 
 async function withGeminiTimeout<T>(operation: Promise<T>, timeoutMs = GEMINI_TIMEOUT_MS): Promise<T> {

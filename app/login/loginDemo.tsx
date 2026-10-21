@@ -1,6 +1,7 @@
 "use client";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { useLanguage } from "@/context/LanguageContext";
 import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -19,6 +20,7 @@ export default function LoginDemo({ user }: LoginDemoProps) {
   // Everything you need for the UI is listed in AUTH_UI_GUIDE.md
   // ---------------------------------------------------------------
   const router = useRouter();
+  const { t } = useLanguage();
   const supabase = getSupabaseBrowserClient();
 
   const [mode, setMode] = useState<Mode>("login");
@@ -52,11 +54,28 @@ export default function LoginDemo({ user }: LoginDemoProps) {
       if (error) {
         showStatus(error.message, true);
       } else if (data.user && data.user.identities?.length === 0) {
-        // Supabase returns no error when the email is already registered
-        // (to avoid leaking which emails exist), but identities is empty.
-        showStatus("An account with this email already exists. Try logging in.", true);
+        showStatus(t.auth.alreadyExists, true);
       } else {
-        showStatus("Check your email to confirm your account.");
+        const createdUser = data.user;
+
+        if (createdUser) {
+          await supabase.from("profiles").upsert(
+            {
+              id: createdUser.id,
+              email: createdUser.email ?? email,
+              full_name: "",
+              business_name: "",
+              dob: "",
+              phone: "",
+              location: "",
+              industry: "",
+              bio: "",
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "id" },
+          );
+        }
+        showStatus(t.auth.emailConfirmation);
       }
     } else {
       const { error } = await supabase.auth.signInWithPassword({
@@ -67,7 +86,29 @@ export default function LoginDemo({ user }: LoginDemoProps) {
       if (error) {
         showStatus(error.message, true);
       } else {
-        showStatus("Logged in successfully.");
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          await supabase.from("profiles").upsert(
+            {
+              id: user.id,
+              email: user.email ?? email,
+              full_name: "",
+              business_name: "",
+              dob: "",
+              phone: "",
+              location: "",
+              industry: "",
+              bio: "",
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "id" },
+          );
+        }
+
+        showStatus(t.auth.loginSuccess);
         router.push("/");
         router.refresh();
       }
@@ -160,52 +201,51 @@ export default function LoginDemo({ user }: LoginDemoProps) {
       {user ? (
             /* ---------- Already signed in ---------- */
             <>
-              <h1 className="mb-2 text-xl font-semibold">You&apos;re signed in</h1>
+              <h1 className="mb-2 text-xl font-semibold">{t.auth.signedInTitle}</h1>
               <p className="mb-6 break-all text-center text-sm">
-                Signed in as {user.email}
+                {t.auth.signedInAs} {user.email}
               </p>
-              {/* "/" is the dashboard atm; the backend redirects to /dashboard */}
               <Link href="/" className={`${pill} bg-primary`}>
-                Go To My Dashboard
+                {t.auth.goToDashboard}
               </Link>
               <button
                 type="button"
                 onClick={handleSignOut}
                 className={`${pill} mt-3 bg-accent`}
               >
-                Sign Out
+                {t.auth.signOut}
               </button>
             </>
           ) : step === "welcome" ? (
             /* ---------- Welcome ---------- */
             <>
-              <h1 className="mb-8 text-xl font-semibold">Welcome To mifi!</h1>
+              <h1 className="mb-8 text-xl font-semibold">{t.auth.welcomeTitle}</h1>
               <button
                 type="button"
                 onClick={() => choose("login")}
                 className={`${pill} bg-primary`}
               >
-                Log In
+                {t.auth.loginButton}
               </button>
               <button
                 type="button"
                 onClick={() => choose("signup")}
                 className={`${pill} mt-3 bg-accent`}
               >
-                Sign Up
+                {t.auth.signUp}
               </button>
             </>
           ) : (
             /* ---------- Login / Sign up form ---------- */
             <>
               <h1 className="mb-6 text-xl font-semibold">
-                {mode === "signup" ? "Sign Up For Free!" : "Login"}
+                {mode === "signup" ? t.auth.signUpFree : t.auth.loginFormTitle}
               </h1>
 
               <form onSubmit={handleSubmit} className="w-full space-y-4">
                 <div>
                   <label htmlFor="email" className={label}>
-                    Email
+                    {t.auth.email}
                   </label>
                   <input
                     id="email"
@@ -219,7 +259,7 @@ export default function LoginDemo({ user }: LoginDemoProps) {
                 </div>
                 <div>
                   <label htmlFor="password" className={label}>
-                    Password
+                    {t.auth.password}
                   </label>
                   <input
                     id="password"
@@ -239,7 +279,7 @@ export default function LoginDemo({ user }: LoginDemoProps) {
                   disabled={loading}
                   className={`${pill} bg-primary`}
                 >
-                  {loading ? "Please wait..." : "Get Started"}
+                  {loading ? t.auth.pleaseWait : t.auth.getStarted}
                 </button>
               </form>
 
@@ -260,34 +300,34 @@ export default function LoginDemo({ user }: LoginDemoProps) {
                   role="alert"
                   className="mt-4 w-full rounded-lg bg-red-100 px-3 py-2 text-center text-sm text-red-700"
                 >
-                  Google sign-in didn&apos;t complete. Please try again.
+                  {t.auth.googleError}
                 </p>
               ) : null}
 
               {/* Google button on sign up */}
               {mode === "signup" && (
                 <>
-                  <p className="my-3 font-semibold">OR</p>
+                  <p className="my-3 font-semibold">{t.auth.or}</p>
                   <button
                     type="button"
                     onClick={handleGoogleSignIn}
                     disabled={loading}
                     className={`${pill} bg-accent`}
                   >
-                    Sign In With Gmail
+                    {t.auth.signInGoogle}
                   </button>
                 </>
               )}
 
               <p className="mt-4 text-sm">
-                {mode === "signup" ? "Already Have An Account? " : "No Account? "}
+                {mode === "signup" ? t.auth.alreadyHaveAccount : t.auth.noAccount}
                 <button
                   type="button"
                   onClick={toggleMode}
                   disabled={loading}
                   className="font-semibold text-green-moss hover:underline"
                 >
-                  {mode === "signup" ? "Login" : "Sign Up"}
+                  {mode === "signup" ? t.auth.loginButton : t.auth.signUp}
                 </button>
               </p>
             </>

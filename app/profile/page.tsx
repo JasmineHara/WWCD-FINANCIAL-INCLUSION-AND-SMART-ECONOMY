@@ -2,7 +2,8 @@
 
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TopBar } from "@/components/tracker/TopBar";
 import {
@@ -19,6 +20,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface UserProfile {
   name: string;
@@ -33,6 +35,7 @@ interface UserProfile {
 
 function ProfilePageContent() {
   const router = useRouter();
+  const { t } = useLanguage();
   const searchParams = useSearchParams();
   const viewUserId = searchParams.get("id"); // URL param for viewing mentor/peer profiles
 
@@ -42,6 +45,8 @@ function ProfilePageContent() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Clean initial state with no mock values
   const [profile, setProfile] = useState<UserProfile>({
@@ -60,15 +65,51 @@ function ProfilePageContent() {
       setIsLoading(true);
       try {
         if (isSelf) {
-          // Fetch from localStorage or backend user endpoint
+          const supabase = getSupabaseBrowserClient();
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+
           const savedName = localStorage.getItem("mifi_user_name") || "";
           const savedBusiness = localStorage.getItem("mifi_business_name") || "";
-          const savedEmail = localStorage.getItem("mifi_user_email") || "";
+          const savedEmail = localStorage.getItem("mifi_user_email") || user?.email || "";
           const savedDob = localStorage.getItem("mifi_user_dob") || "";
           const savedPhone = localStorage.getItem("mifi_user_phone") || "";
           const savedLocation = localStorage.getItem("mifi_user_location") || "";
           const savedIndustry = localStorage.getItem("mifi_user_industry") || "";
           const savedBio = localStorage.getItem("mifi_user_bio") || "";
+
+          if (user) {
+            const { data: profileRow, error } = await supabase
+              .from("profiles")
+              .select("*")
+              .eq("id", user.id)
+              .maybeSingle();
+
+            if (!error && profileRow) {
+              const nextProfile = {
+                name: profileRow.full_name ?? savedName,
+                businessName: profileRow.business_name ?? savedBusiness,
+                email: profileRow.email ?? user.email ?? savedEmail,
+                dob: profileRow.dob ?? savedDob,
+                phone: profileRow.phone ?? savedPhone,
+                location: profileRow.location ?? savedLocation,
+                industry: profileRow.industry ?? savedIndustry,
+                bio: profileRow.bio ?? savedBio,
+              };
+
+              setProfile(nextProfile);
+              localStorage.setItem("mifi_user_name", nextProfile.name);
+              localStorage.setItem("mifi_business_name", nextProfile.businessName);
+              localStorage.setItem("mifi_user_email", nextProfile.email);
+              localStorage.setItem("mifi_user_dob", nextProfile.dob);
+              localStorage.setItem("mifi_user_phone", nextProfile.phone);
+              localStorage.setItem("mifi_user_location", nextProfile.location);
+              localStorage.setItem("mifi_user_industry", nextProfile.industry);
+              localStorage.setItem("mifi_user_bio", nextProfile.bio);
+              return;
+            }
+          }
 
           setProfile({
             name: savedName,
@@ -81,7 +122,6 @@ function ProfilePageContent() {
             bio: savedBio,
           });
         } else {
-          // TODO: Replace with backend API fetch: e.g., await fetch(`/api/users/${viewUserId}`)
           setProfile({
             name: "",
             businessName: "",
@@ -108,7 +148,11 @@ function ProfilePageContent() {
     setIsEditing(false);
 
     try {
-      // Sync locally for frontend state persistence
+      const supabase = getSupabaseBrowserClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       localStorage.setItem("mifi_user_name", profile.name);
       localStorage.setItem("mifi_business_name", profile.businessName);
       localStorage.setItem("mifi_user_email", profile.email);
@@ -117,11 +161,30 @@ function ProfilePageContent() {
       localStorage.setItem("mifi_user_location", profile.location);
       localStorage.setItem("mifi_user_industry", profile.industry);
       localStorage.setItem("mifi_user_bio", profile.bio);
-      
-      // TODO: Connect backend PUT/PATCH endpoint
-      // await fetch('/api/profile', { method: 'PUT', body: JSON.stringify(profile) });
 
-      setSuccessMessage("Profile updated successfully!");
+      if (user) {
+        const { error } = await supabase.from("profiles").upsert(
+          {
+            id: user.id,
+            email: profile.email || user.email,
+            full_name: profile.name,
+            business_name: profile.businessName,
+            dob: profile.dob,
+            phone: profile.phone,
+            location: profile.location,
+            industry: profile.industry,
+            bio: profile.bio,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "id" },
+        );
+
+        if (error) {
+          console.error("Supabase profile save error:", error.message);
+        }
+      }
+
+      setSuccessMessage(t.profile.success);
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Failed to save profile:", error);
@@ -129,21 +192,29 @@ function ProfilePageContent() {
   };
 
   const handleLogout = async () => {
-  try {
-    const supabase = getSupabaseBrowserClient();
-    await supabase.auth.signOut(); // Clears Supabase cookies & session
-  } catch (error) {
-    console.error("Error signing out:", error);
-  } finally {
-    localStorage.clear();
-    router.push("/login");
-    router.refresh(); // Refresh page state so server components re-evaluate session
-  }
-};
+    try {
+      const supabase = getSupabaseBrowserClient();
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    } finally {
+      localStorage.clear();
+      router.push("/login");
+      router.refresh();
+    }
+  };
+
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarUrl(previewUrl);
+  };
 
   return (
     <div className="w-full min-h-screen pb-16">
-      <TopBar title={isSelf ? "Your Profile" : "Mentor Profile"} />
+      <TopBar title={isSelf ? t.profile.yourProfile : t.profile.mentorProfile} />
 
       <main className="px-8 py-6 space-y-6 max-w-4xl mx-auto">
         {/* Success Alert Banner */}
@@ -161,17 +232,43 @@ function ProfilePageContent() {
         >
           {/* Avatar & Subheader Banner */}
           <div className="flex flex-col items-center text-center space-y-3">
-            <div className="h-28 w-28 rounded-full bg-gray-200 dark:bg-zinc-700 flex items-center justify-center shadow-inner overflow-hidden border-4 border-white dark:border-zinc-800">
-              <User className="h-14 w-14 text-gray-400" />
+            <div className="relative h-28 w-28">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="h-28 w-28 rounded-full bg-gray-200 dark:bg-zinc-700 flex items-center justify-center shadow-inner overflow-hidden border-4 border-white dark:border-zinc-800 transition hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-amber-500"
+                aria-label="Upload profile image"
+              >
+                {avatarUrl ? (
+                  <Image
+                    src={avatarUrl}
+                    alt="Profile preview"
+                    width={112}
+                    height={112}
+                    unoptimized
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <User className="h-14 w-14 text-gray-400" />
+                )}
+              </button>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
             </div>
             <div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                 {profile.businessName || profile.name
                   ? `${profile.businessName} ${profile.businessName && profile.name ? "-" : ""} ${profile.name}`
-                  : "User Profile"}
+                  : t.profile.userProfile}
               </h3>
               <p className="text-sm text-gray-500 max-w-md mt-1">
-                {profile.bio || "No profile bio provided yet."}
+                {profile.bio || t.profile.noBio}
               </p>
             </div>
           </div>
@@ -183,11 +280,11 @@ function ProfilePageContent() {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
                   <Building className="h-3.5 w-3.5 text-amber-600" />
-                  Name Of Business
+                  {t.profile.businessName}
                 </label>
                 <input
                   type="text"
-                  placeholder="Enter business name"
+                  placeholder={t.profile.businessPlaceholder}
                   disabled={!isEditing || !isSelf || isLoading}
                   value={profile.businessName}
                   onChange={(e) =>
@@ -201,11 +298,11 @@ function ProfilePageContent() {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
                   <MapPin className="h-3.5 w-3.5 text-amber-600" />
-                  Business Location
+                  {t.profile.location}
                 </label>
                 <input
                   type="text"
-                  placeholder="City, Country"
+                  placeholder={t.profile.locationPlaceholder}
                   disabled={!isEditing || !isSelf || isLoading}
                   value={profile.location}
                   onChange={(e) =>
@@ -219,11 +316,11 @@ function ProfilePageContent() {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
                   <Mail className="h-3.5 w-3.5 text-amber-600" />
-                  Email Address
+                  {t.profile.email}
                 </label>
                 <input
                   type="email"
-                  placeholder="name@example.com"
+                  placeholder={t.profile.emailPlaceholder}
                   disabled={!isEditing || !isSelf || isLoading}
                   value={profile.email}
                   onChange={(e) =>
@@ -237,11 +334,11 @@ function ProfilePageContent() {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
                   <Briefcase className="h-3.5 w-3.5 text-amber-600" />
-                  Industry / Areas Of Expertise
+                  {t.profile.industry}
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Retail & E-Commerce"
+                  placeholder={t.profile.industryPlaceholder}
                   disabled={!isEditing || !isSelf || isLoading}
                   value={profile.industry}
                   onChange={(e) =>
@@ -255,7 +352,7 @@ function ProfilePageContent() {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
                   <Calendar className="h-3.5 w-3.5 text-amber-600" />
-                  Date Of Birth
+                  {t.profile.dob}
                 </label>
                 <input
                   type="date"
@@ -272,11 +369,11 @@ function ProfilePageContent() {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
                   <Phone className="h-3.5 w-3.5 text-amber-600" />
-                  Phone Number
+                  {t.profile.phone}
                 </label>
                 <input
                   type="tel"
-                  placeholder="+60..."
+                  placeholder={t.profile.phonePlaceholder}
                   disabled={!isEditing || !isSelf || isLoading}
                   value={profile.phone}
                   onChange={(e) =>
@@ -302,7 +399,7 @@ function ProfilePageContent() {
                     className="flex-1 max-w-xs rounded-full py-3 text-sm font-semibold text-white transition hover:brightness-95 shadow-sm"
                     style={{ backgroundColor: "#4a6741" }}
                   >
-                    Edit Profile
+                    {t.profile.editProfile}
                   </button>
                 ) : (
                   <button
@@ -312,7 +409,7 @@ function ProfilePageContent() {
                     style={{ backgroundColor: "#4a6741" }}
                   >
                     <Save className="h-4 w-4" />
-                    <span>Save Profile</span>
+                    <span>{t.profile.saveProfile}</span>
                   </button>
                 )}
 
@@ -322,7 +419,7 @@ function ProfilePageContent() {
                   className="flex-1 max-w-xs rounded-full py-3 text-sm font-semibold text-white transition hover:brightness-95 shadow-sm"
                   style={{ backgroundColor: "#f76f54" }}
                 >
-                  Logout
+                  {t.profile.logout}
                 </button>
               </>
             ) : (
@@ -336,7 +433,7 @@ function ProfilePageContent() {
                   }}
                 >
                   <UserPlus className="h-4 w-4" />
-                  <span>{isFollowing ? "Following" : "+ Follow"}</span>
+                  <span>{isFollowing ? t.profile.following : t.profile.follow}</span>
                 </button>
 
                 <button
@@ -348,7 +445,7 @@ function ProfilePageContent() {
                   style={{ backgroundColor: "#f76f54" }}
                 >
                   <MessageCircle className="h-4 w-4" />
-                  <span>Message</span>
+                  <span>{t.profile.message}</span>
                 </button>
               </>
             )}
@@ -360,8 +457,10 @@ function ProfilePageContent() {
 }
 
 export default function ProfilePage() {
+  const { t } = useLanguage();
+
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading profile...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">{t.profile.loading}</div>}>
       <ProfilePageContent />
     </Suspense>
   );

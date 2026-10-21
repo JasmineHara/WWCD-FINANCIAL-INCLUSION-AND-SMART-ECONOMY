@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { TopBar } from "@/components/tracker/TopBar";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { useLanguage } from "@/context/LanguageContext";
 import {
   CheckCircle2,
   ArrowLeft,
@@ -23,6 +24,7 @@ type MentorFormData = {
 
 export default function BecomeMentorPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const supabase = getSupabaseBrowserClient();
 
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -44,23 +46,21 @@ export default function BecomeMentorPage() {
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from("mentor_applications").insert([formData] as never);
-      if (error) {
-        console.error("Supabase insert error:", error.message);
-        alert(`Submission failed: ${error.message}`);
-        setIsSubmitting(false);
-        return;
-      }
+      const stored = JSON.parse(localStorage.getItem("mentor_applications") ?? "[]") as MentorFormData[];
+      const nextApplications = [...stored, formData];
+      localStorage.setItem("mentor_applications", JSON.stringify(nextApplications));
       setIsSubmitted(true);
     } catch (err) {
       console.error("Unexpected error:", err);
+      alert("Submission failed. Please try again.");
+    } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
     <div className="w-full min-h-screen pb-16">
-      <TopBar title="Become a Mentor 🎓" />
+      <TopBar title={t.mentor.pageTitle} />
 
       <main className="px-8 py-6 max-w-4xl mx-auto space-y-8">
         <div className="flex items-center justify-between">
@@ -69,7 +69,7 @@ export default function BecomeMentorPage() {
             className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white transition cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span>Back to Mentors</span>
+            <span>{t.mentor.backToMentors}</span>
           </button>
         </div>
 
@@ -84,10 +84,10 @@ export default function BecomeMentorPage() {
 
             <div className="space-y-2">
               <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white">
-                Application Submitted!
+                {t.mentor.applicationSubmitted}
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-300 max-w-md mx-auto leading-relaxed">
-                Your application has been logged to Supabase. Our team will review your profile within 2–3 business days.
+                {t.mentor.applicationBody}
               </p>
             </div>
 
@@ -97,7 +97,7 @@ export default function BecomeMentorPage() {
               className="rounded-full px-6 py-3 text-xs font-bold text-white transition hover:brightness-95 cursor-pointer shadow-sm"
               style={{ backgroundColor: "var(--color-primary, #f76f54)" }}
             >
-              Browse Mentors
+              {t.mentor.browseMentors}
             </button>
           </div>
         ) : (
@@ -108,21 +108,21 @@ export default function BecomeMentorPage() {
             <div className="space-y-3 border-b pb-6" style={{ borderColor: "var(--mifi-border, #e3dcc8)" }}>
               <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
                 <Sparkles className="h-3.5 w-3.5" />
-                <span>Join the mifi Advisory Network</span>
+                <span>{t.mentor.badge}</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">
-                Share Your Expertise with Growing Businesses
+                {t.mentor.headline}
               </h1>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Full Name *</label>
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">{t.mentor.fullName}</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Sarah Jenkins"
+                    placeholder={t.mentor.fullNamePlaceholder}
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                     className="w-full rounded-xl border px-4 py-2.5 text-xs bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
@@ -131,11 +131,11 @@ export default function BecomeMentorPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Work Email *</label>
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">{t.mentor.workEmail}</label>
                   <input
                     type="email"
                     required
-                    placeholder="sarah@company.com"
+                    placeholder={t.mentor.workEmailPlaceholder}
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full rounded-xl border px-4 py-2.5 text-xs bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
@@ -144,11 +144,11 @@ export default function BecomeMentorPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Phone Number *</label>
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">{t.mentor.phoneNumber}</label>
                   <input
                     type="tel"
                     required
-                    placeholder="+60..."
+                    placeholder={t.mentor.phonePlaceholder}
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full rounded-xl border px-4 py-2.5 text-xs bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
@@ -157,11 +157,11 @@ export default function BecomeMentorPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Current Role / Company *</label>
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">{t.mentor.currentRole}</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Senior Advisor at Apex"
+                    placeholder={t.mentor.currentRolePlaceholder}
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                     className="w-full rounded-xl border px-4 py-2.5 text-xs bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
@@ -171,26 +171,27 @@ export default function BecomeMentorPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Area of Expertise *</label>
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">{t.mentor.expertise}</label>
                 <select
                   value={formData.expertise}
                   onChange={(e) => setFormData({ ...formData, expertise: e.target.value })}
                   className="w-full rounded-xl border px-4 py-2.5 text-xs bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
                   style={{ borderColor: "var(--mifi-border, #e3dcc8)" }}
                 >
-                  <option value="Cash Flow & Budgeting">Cash Flow & Budgeting</option>
-                  <option value="Tax Planning & Legal">Tax Planning & Legal</option>
-                  <option value="Retail & E-Commerce">Retail & E-Commerce</option>
-                  <option value="Marketing & Acquisition">Marketing & Acquisition</option>
+                  {t.mentor.expertiseOptions.filter((option) => option.value !== "All").map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">LinkedIn / CV URL *</label>
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">{t.mentor.linkedin}</label>
                 <input
                   type="url"
                   required
-                  placeholder="https://linkedin.com/in/username"
+                  placeholder={t.mentor.linkedinPlaceholder}
                   value={formData.linkedinUrl}
                   onChange={(e) => setFormData({ ...formData, linkedinUrl: e.target.value })}
                   className="w-full rounded-xl border px-4 py-2.5 text-xs bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
@@ -199,11 +200,11 @@ export default function BecomeMentorPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Short Bio *</label>
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">{t.mentor.shortBio}</label>
                 <textarea
                   required
                   rows={4}
-                  placeholder="Tell us about your experience, the businesses you advise, and what kind of support you can offer."
+                  placeholder={t.mentor.shortBioPlaceholder}
                   value={formData.bio}
                   onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                   className="w-full rounded-xl border px-4 py-2.5 text-xs bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"

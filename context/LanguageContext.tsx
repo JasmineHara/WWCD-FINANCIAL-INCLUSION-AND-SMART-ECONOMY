@@ -20,18 +20,17 @@ type LanguageContextValue = {
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
+function getInitialLanguage(): Language {
+  if (typeof window === "undefined") {
+    return DEFAULT_LANGUAGE;
+  }
+
+  const saved = window.localStorage.getItem("language");
+  return saved === "en" || saved === "bm" ? saved : DEFAULT_LANGUAGE;
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Language>(DEFAULT_LANGUAGE);
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem("language");
-    if (saved === "en" || saved === "bm") {
-      setLangState(saved);
-      return;
-    }
-
-    setLangState(DEFAULT_LANGUAGE);
-  }, []);
+  const [lang, setLangState] = useState<Language>(getInitialLanguage);
 
   useEffect(() => {
     document.documentElement.lang = lang === "bm" ? "ms" : "en";

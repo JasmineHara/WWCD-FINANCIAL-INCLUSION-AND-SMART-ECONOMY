@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MessageCircleMore, Send, Bot, User, X, ArrowUpRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface ChatMessage {
   id: number;
@@ -10,21 +11,26 @@ interface ChatMessage {
   text: string;
 }
 
-const starterMessages: ChatMessage[] = [
-  {
-    id: 1,
-    sender: "ai",
-    text: "Hi! I can help review cash flow, expenses, and business trends.",
-  },
-];
-
 export default function FloatingChat() {
   const router = useRouter();
+  const { t, lang } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>(starterMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { id: 1, sender: "ai", text: t.chat.welcome },
+  ]);
   const [input, setInput] = useState("");
 
-  const handleSend = () => {
+  useEffect(() => {
+    setMessages((previous) =>
+      previous.length === 0
+        ? [{ id: 1, sender: "ai", text: t.chat.welcome }]
+        : previous.map((message, index) =>
+            index === 0 && message.sender === "ai" ? { ...message, text: t.chat.welcome } : message,
+          ),
+    );
+  }, [lang, t.chat.welcome]);
+
+  const handleSend = async () => {
     const trimmed = input.trim();
     if (!trimmed) return;
 
@@ -34,19 +40,56 @@ export default function FloatingChat() {
       text: trimmed,
     };
 
+    const history = messages.map((message) => ({
+      role: message.sender === "user" ? "user" : "assistant",
+      content: message.text,
+    }));
+
     setMessages((previous) => [...previous, userMessage]);
     setInput("");
 
-    window.setTimeout(() => {
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: trimmed,
+          history,
+        }),
+      });
+
+      const data = (await response.json()) as { reply?: string; error?: string };
+
+      if (!response.ok || !data.reply) {
+        throw new Error(data.error ?? "Unable to reach the AI assistant.");
+      }
+
+      const nextReply = data.reply ?? "I could not access the live AI service right now.";
+
       setMessages((previous) => [
         ...previous,
         {
           id: Date.now() + 1,
           sender: "ai",
-          text: "I can help with that. Open the full chat page for a deeper breakdown.",
+          text: nextReply,
         },
       ]);
-    }, 450);
+    } catch (error) {
+      console.error("Floating chat error:", error);
+      const fallbackReply =
+        error instanceof Error
+          ? error.message
+          : "I could not access the live AI service right now.";
+
+      setMessages((previous) => [
+        ...previous,
+        {
+          id: Date.now() + 1,
+          sender: "ai",
+          text: fallbackReply,
+        },
+      ]);
+    }
   };
 
   return (
@@ -60,7 +103,7 @@ export default function FloatingChat() {
               </div>
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--table-text,#673c34)]">
-                  mifi AI
+                  {t.chat.title}
                 </p>
               </div>
             </div>
@@ -68,7 +111,7 @@ export default function FloatingChat() {
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              aria-label="Close chat"
+              aria-label={t.chat.closeChat}
               className="rounded-full p-1.5 text-[var(--mifi-sidebar-text-muted,#6b6b6b)] transition hover:bg-black/5 hover:text-[var(--fg,#000000)]"
             >
               <X className="h-4 w-4" />
@@ -102,7 +145,7 @@ export default function FloatingChat() {
                   onClick={() => router.push("/chat")}
                   className="inline-flex items-center gap-1 rounded-full bg-[#f7e289] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--table-text,#673c34)] transition hover:bg-[#f4d96a]"
                 >
-                  Open full chat
+                  {t.chat.openFullChat}
                   <ArrowUpRight className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -117,7 +160,7 @@ export default function FloatingChat() {
                       handleSend();
                     }
                   }}
-                  placeholder="Ask about your money..."
+                  placeholder={t.chat.placeholder}
                   className="flex-1 rounded-xl border border-[var(--mifi-border,#e7e3d0)] bg-[var(--bg,#fdf8e2)] px-3 py-2 text-sm text-[var(--fg,#000000)] outline-none ring-0 placeholder:text-[var(--mifi-sidebar-text-muted,#6b6b6b)]"
                 />
 
@@ -126,7 +169,7 @@ export default function FloatingChat() {
                   onClick={handleSend}
                   disabled={!input.trim()}
                   className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f76f54] text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-40"
-                  aria-label="Send message"
+                  aria-label={t.chat.send}
                 >
                   <Send className="h-4 w-4" />
                 </button>
@@ -138,7 +181,7 @@ export default function FloatingChat() {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          aria-label="Open AI assistant"
+          aria-label={t.chat.openChat}
           className="flex h-16 w-16 items-center justify-center rounded-full bg-[#f76f54] text-white shadow-[0_18px_35px_rgba(247,111,84,0.35)] transition hover:scale-105 hover:shadow-[0_20px_40px_rgba(247,111,84,0.45)]"
         >
           <MessageCircleMore className="h-7 w-7" />

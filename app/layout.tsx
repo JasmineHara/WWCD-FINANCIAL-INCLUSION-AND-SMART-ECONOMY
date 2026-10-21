@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Poppins, Andika } from "next/font/google";
 import AppShell from "@/components/AppShell";
+import { LanguageProvider } from "@/components/LanguageProvider";
 import Script from "next/script";
 
 const poppins = Poppins({
@@ -30,7 +31,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </Script>
       </head>
       <body className="min-h-full font-sans">
-        <AppShell>{children}</AppShell>
+        <LanguageProvider>
+          <AppShell>{children}</AppShell>
+        </LanguageProvider>
       </body>
     </html>
   );
