@@ -34,11 +34,37 @@ export default function DataTrackerPage() {
     async function fetchTrackerData() {
       try {
         setIsLoading(true);
-        setFiles([]);
-        setTransactions([]);
-        setAiSummary("AI Analysis: No statements uploaded yet. Upload a document to generate cash flow insights.");
+
+        const res = await fetch("/api/tracker/transactions?limit=200", {
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to load transactions");
+        }
+
+        const data = await res.json();
+        const loadedTransactions = Array.isArray(data?.transactions) ? data.transactions : [];
+
+        setTransactions(loadedTransactions);
+        setFiles(
+          loadedTransactions.length > 0
+            ? [{ id: "all", name: "All Files / Combined View", count: loadedTransactions.length }]
+            : []
+        );
+
+        if (loadedTransactions.length === 0) {
+          setAiSummary("AI Analysis: No statements uploaded yet. Upload a document to generate cash flow insights.");
+        } else {
+          setAiSummary(
+            `AI Analysis: ${loadedTransactions.length} transaction entries are currently available for review and budgeting insights.`
+          );
+        }
       } catch (error) {
         console.error("Failed to load tracker data:", error);
+        setTransactions([]);
+        setFiles([]);
+        setAiSummary("AI Analysis: No statements uploaded yet. Upload a document to generate cash flow insights.");
       } finally {
         setIsLoading(false);
       }

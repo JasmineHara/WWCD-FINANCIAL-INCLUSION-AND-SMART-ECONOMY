@@ -54,32 +54,39 @@ export function InventoryTable({
                 </td>
               </tr>
             ) : (
-              transactions.map((tx, idx) => (
-                <tr key={tx.id || idx} className="hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">
-                    {tx.date}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-white">
-                    {tx.description}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-600 dark:text-gray-400">
-                    <span className="inline-block rounded-full bg-gray-100 dark:bg-zinc-800 px-2.5 py-0.5 text-xs font-medium">
-                      {tx.category || "General"}
-                    </span>
-                  </td>
-                  <td
-                    className={`px-6 py-4 whitespace-nowrap text-right font-semibold ${
-                      typeof tx.amount === "number" && tx.amount < 0
-                        ? "text-red-600"
-                        : "text-emerald-600"
-                    }`}
-                  >
-                    {typeof tx.amount === "number"
-                      ? `${tx.amount < 0 ? "-" : "+"}RM ${Math.abs(tx.amount).toFixed(2)}`
-                      : tx.amount}
-                  </td>
-                </tr>
-              ))
+              transactions.map((tx, idx) => {
+                const description = tx.name ?? tx.description ?? "Imported transaction";
+                const rawAmount = tx.price ?? tx.amount ?? tx.value ?? 0;
+                const category = tx.category ?? "General";
+
+                const numericAmount =
+                  typeof rawAmount === "number"
+                    ? rawAmount
+                    : Number(String(rawAmount).replace(/[^0-9.-]/g, "")) || 0;
+
+                return (
+                  <tr key={tx.id ?? `${tx.date ?? "unknown"}-${idx}`} className="hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">
+                      {tx.date ?? "—"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-white">
+                      {description}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-600 dark:text-gray-400">
+                      <span className="inline-block rounded-full bg-gray-100 dark:bg-zinc-800 px-2.5 py-0.5 text-xs font-medium">
+                        {category}
+                      </span>
+                    </td>
+                    <td
+                      className={`px-6 py-4 whitespace-nowrap text-right font-semibold ${
+                        numericAmount < 0 ? "text-red-600" : "text-emerald-600"
+                      }`}
+                    >
+                      {`${numericAmount < 0 ? "-" : "+"}RM ${Math.abs(numericAmount).toFixed(2)}`}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
