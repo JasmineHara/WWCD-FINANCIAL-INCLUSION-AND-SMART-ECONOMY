@@ -146,13 +146,12 @@ export default function LoginDemo({ user }: LoginDemoProps) {
       {/* Left panel*/}
       <section className="flex w-full items-center justify-center bg-bg px-6 py-10 font-heading text-fg lg:w-[62.5%]">
         <div className="flex w-full max-w-sm flex-col items-center">
-          {/* TODO: replace with real logo (export into /public) */}
-          <div className="mb-4 relative h-32 w-32">
+          <div className="relative h-36 w-36 flex items-center justify-center p-2 overflow-visible">
             <Image
               src="/mifi-logo.png"
               alt="mifi logo"
               fill
-              className="object-contain"
+              className="object-contain filter drop-shadow-md"
               priority
             />
           </div>

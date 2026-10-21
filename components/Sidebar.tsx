@@ -45,12 +45,12 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
       >
         {!collapsed ? (
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="relative h-9 w-9 shrink-0">
+            <div className="relative h-12 w-12 shrink-0 flex items-center justify-center p-1 overflow-visible">
               <Image
                 src="/mifi-logo.png"
                 alt="mifi logo"
                 fill
-                className="object-contain"
+                className="object-contain filter drop-shadow-md"
                 priority
               />
             </div>
@@ -64,7 +64,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
               src="/mifi-logo.png"
               alt="mifi logo"
               fill
-              className="object-contain"
+              className="object-contain filter drop-shadow-md"
               priority
             />
           </Link>
@@ -130,12 +130,22 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </Link>
 
       <Link
-        href="/chat"
-        aria-label="Open chatbot"
-        className={`mt-auto rounded-full bg-accent transition hover:brightness-110 ${
-          collapsed ? "mx-auto h-12 w-12" : "ml-4 h-20 w-20"
-        }`}
-      />
+  href="/chat"
+  aria-label="Open chatbot"
+  title="AI Financial Assistant"
+  className={`mt-auto flex items-center justify-center rounded-full bg-accent shadow-md transition hover:scale-105 hover:brightness-110 cursor-pointer overflow-hidden ${
+    collapsed ? "mx-auto h-12 w-12 p-2" : "ml-4 h-20 w-20 p-3"
+  }`}
+>
+  <div className="relative h-full w-full">
+    <Image
+      src="/mifi-logo.png"
+      alt="mifi AI Assistant"
+      fill
+      className="object-contain filter drop-shadow-md"
+    />
+  </div>
+</Link>
     </aside>
   );
 }
