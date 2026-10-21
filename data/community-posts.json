@@ -1,0 +1,41 @@
+[
+  {
+    "id": "thread-1",
+    "title": "How do you handle slow cash-flow months as a small business?",
+    "preview": "Looking for practical ways to stay steady when sales dip temporarily.",
+    "content": "We are a retail business and our sales drop for two months every year. I want to keep stock moving without over-spending. What approaches have worked for you?",
+    "author": "Aisha",
+    "timeAgo": "2 hours ago",
+    "tags": ["Cash Flow", "Retail"],
+    "likes": 18,
+    "liked": false,
+    "replies": [
+      {
+        "id": "reply-1",
+        "author": "Farid",
+        "timeAgo": "1 hour ago",
+        "content": "I usually build a leaner monthly forecast and freeze non-essential purchases until the sales rebound.",
+        "isBestAnswer": true
+      }
+    ]
+  },
+  {
+    "id": "thread-2",
+    "title": "Best way to track recurring expenses in a growing business?",
+    "preview": "I want a cleaner system for subscriptions, utilities, and software costs.",
+    "content": "My monthly spending is becoming harder to track because the subscriptions and recurring bills are spread across different tools. I need a way to review them every month.",
+    "author": "Nadia",
+    "timeAgo": "1 day ago",
+    "tags": ["Accounting"],
+    "likes": 12,
+    "liked": true,
+    "replies": [
+      {
+        "id": "reply-2",
+        "author": "Hafiz",
+        "timeAgo": "18 hours ago",
+        "content": "Create a recurring-expenses category in your tracker and review it every Friday with your cash-flow summary."
+      }
+    ]
+  }
+]
