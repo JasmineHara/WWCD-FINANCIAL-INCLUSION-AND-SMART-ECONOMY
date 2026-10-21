@@ -18,6 +18,7 @@ import {
   UserPlus,
   MessageCircle,
 } from "lucide-react";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 interface UserProfile {
   name: string;
@@ -116,7 +117,7 @@ function ProfilePageContent() {
       localStorage.setItem("mifi_user_location", profile.location);
       localStorage.setItem("mifi_user_industry", profile.industry);
       localStorage.setItem("mifi_user_bio", profile.bio);
-
+      
       // TODO: Connect backend PUT/PATCH endpoint
       // await fetch('/api/profile', { method: 'PUT', body: JSON.stringify(profile) });
 
@@ -127,10 +128,18 @@ function ProfilePageContent() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+  try {
+    const supabase = getSupabaseBrowserClient();
+    await supabase.auth.signOut(); // Clears Supabase cookies & session
+  } catch (error) {
+    console.error("Error signing out:", error);
+  } finally {
     localStorage.clear();
     router.push("/login");
-  };
+    router.refresh(); // Refresh page state so server components re-evaluate session
+  }
+};
 
   return (
     <div className="w-full min-h-screen pb-16">

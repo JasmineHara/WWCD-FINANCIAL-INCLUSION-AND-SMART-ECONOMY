@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Database,
@@ -36,35 +37,69 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         collapsed ? "w-20 px-3" : "w-72 px-6"
       }`}
     >
-      {/* Logo + collapse button */}
+      {/* Logo + Brand Name + Collapse Button */}
       <div
         className={`mb-10 flex items-center ${
           collapsed ? "justify-center" : "justify-between px-2"
         }`}
       >
-        {!collapsed && (
-          <Link href="/" className="font-heading text-3xl font-bold">
-            mifi
+        {!collapsed ? (
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="relative h-12 w-12 shrink-0 flex items-center justify-center p-1 overflow-visible">
+              <Image
+                src="/mifi-logo.png"
+                alt="mifi logo"
+                fill
+                sizes="48px"
+                className="object-contain filter drop-shadow-md"
+                priority
+              />
+            </div>
+            <span className="font-heading text-3xl font-bold tracking-tight">
+              mifi
+            </span>
+          </Link>
+        ) : (
+          <Link href="/" className="relative h-9 w-9 shrink-0" title="mifi">
+            <Image
+              src="/mifi-logo.png"
+              alt="mifi logo"
+              fill
+              sizes="48px"
+              className="object-contain filter drop-shadow-md"
+              priority
+            />
           </Link>
         )}
+
+        {!collapsed && (
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-label="Collapse sidebar"
+            aria-expanded={!collapsed}
+            className="rounded-lg p-2 transition hover:bg-bg cursor-pointer"
+          >
+            <PanelLeftClose className="h-6 w-6" aria-hidden="true" />
+          </button>
+        )}
+      </div>
+
+      {/* Collapse button when sidebar is collapsed */}
+      {collapsed && (
         <button
           type="button"
           onClick={onToggle}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label="Expand sidebar"
           aria-expanded={!collapsed}
-          className="rounded-lg p-2 transition hover:bg-bg"
+          className="mb-6 mx-auto rounded-lg p-2 transition hover:bg-bg cursor-pointer"
         >
-          {collapsed ? (
-            <PanelLeftOpen className="h-6 w-6" aria-hidden="true" />
-          ) : (
-            <PanelLeftClose className="h-6 w-6" aria-hidden="true" />
-          )}
+          <PanelLeftOpen className="h-6 w-6" aria-hidden="true" />
         </button>
-      </div>
+      )}
 
       <nav aria-label="Main" className="flex flex-col gap-2">
         {links.map(({ href, label, icon: Icon }) => {
-          // "/" must match exactly, otherwise it would be active on every page
           const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
             <Link
@@ -77,7 +112,6 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
               } ${active ? "font-bold" : ""}`}
             >
               <Icon className="h-6 w-6 shrink-0" aria-hidden="true" />
-              {/* sr-only keeps the label for screen readers when collapsed */}
               <span className={collapsed ? "sr-only" : ""}>{label}</span>
             </Link>
           );
@@ -98,12 +132,23 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </Link>
 
       <Link
-        href="/chat"
-        aria-label="Open chatbot"
-        className={`mt-auto rounded-full bg-accent transition hover:brightness-110 ${
-          collapsed ? "mx-auto h-12 w-12" : "ml-4 h-20 w-20"
-        }`}
-      />
+  href="/chat"
+  aria-label="Open chatbot"
+  title="AI Financial Assistant"
+  className={`mt-auto flex items-center justify-center rounded-full bg-accent shadow-md transition hover:scale-105 hover:brightness-110 cursor-pointer overflow-hidden ${
+    collapsed ? "mx-auto h-12 w-12 p-2" : "ml-4 h-20 w-20 p-3"
+  }`}
+>
+  <div className="relative h-full w-full">
+    <Image
+      src="/mifi-logo.png"
+      alt="mifi AI Assistant"
+      fill
+      sizes="48px"
+      className="object-contain filter drop-shadow-md"
+    />
+  </div>
+</Link>
     </aside>
   );
 }

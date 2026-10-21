@@ -7,60 +7,86 @@
  */
 "use client";
 
-import { useState } from "react";
-import { X, Check } from "lucide-react";
+import { Download } from "lucide-react";
+import type { RefObject } from "react";
 
-export function DownloadReportButton({ reportId }: { reportId: string }) {
-  const [modal, setModal] = useState<"none" | "success" | "error">("none");
+type Props = {
+  reportId?: string;
+  title?: string;
+  contentRef?: RefObject<HTMLDivElement | null>;
+};
 
-  async function handleDownload() {
-    try {
-      const res = await fetch(`/api/tracker/report/pdf?reportId=${reportId}`);
-      if (!res.ok) throw new Error("download failed");
+export function DownloadReportButton({ reportId, title, contentRef }: Props) {
+  const handleDownload = () => {
+    const exportOnlyReportBox = () => {
+      if (!contentRef?.current) {
+        window.print();
+        return;
+      }
 
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "report.pdf";
-      link.click();
-      URL.revokeObjectURL(url);
+      const clone = contentRef.current.cloneNode(true) as HTMLElement;
+      clone.style.width = "100%";
+      clone.style.maxWidth = "100%";
+      clone.style.margin = "0";
+      clone.style.padding = "0";
+      clone.style.boxShadow = "none";
+      clone.style.border = "0";
 
-      setModal("success");
-    } catch {
-      setModal("error");
-    }
-  }
+      const printWindow = window.open("", "_blank", "width=1200,height=900");
+      if (!printWindow) {
+        window.print();
+        return;
+      }
+
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>${title ?? "My Business Report"}</title>
+            <style>
+              @page { size: A4; margin: 12mm; }
+              body {
+                font-family: Arial, sans-serif;
+                background: white;
+                color: #111827;
+                padding: 0;
+                margin: 0;
+              }
+              * { box-sizing: border-box; }
+              table { width: 100%; border-collapse: collapse; }
+              th, td {
+                border: 1px solid #e5e7eb;
+                padding: 10px 12px;
+                text-align: left;
+              }
+              th { background: #f3f4f6; }
+              ul { padding-left: 18px; }
+              li { margin-bottom: 8px; }
+            </style>
+          </head>
+          <body>
+            ${clone.outerHTML}
+          </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+      }, 300);
+    };
+
+    exportOnlyReportBox();
+  };
 
   return (
-    <>
-      <button
-        onClick={handleDownload}
-        className="w-full rounded-full px-5 py-2 text-sm font-medium"
-        style={{ backgroundColor: "var(--mifi-accent-secondary)", color: "var(--mifi-accent-secondary-text)" }}
-      >
-        Download Full Report (PDF)
-      </button>
-
-      {modal !== "none" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="w-80 rounded-md bg-white p-6 text-center shadow-xl">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border-2">
-              {modal === "success" ? <Check size={24} /> : <X size={24} />}
-            </div>
-            <p className="mb-4 text-sm">
-              {modal === "success" ? "File has been downloaded successfully!" : "Fail to download file."}
-            </p>
-            <button
-              className="w-full rounded-full px-5 py-2 text-sm font-medium"
-              style={{ backgroundColor: "var(--mifi-table-subheader-bg)", color: "white" }}
-              onClick={() => setModal("none")}
-            >
-              OK
-            </button>
-          </div>
-        </div>
-      )}
-    </>
+    <button
+      type="button"
+      onClick={handleDownload}
+      className="flex items-center justify-center gap-2 rounded-2xl border border-amber-300 bg-amber-500 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600"
+    >
+      <Download className="h-4 w-4" />
+      Download full report (PDF)
+    </button>
   );
 }
