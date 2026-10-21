@@ -147,7 +147,15 @@ export default function LoginDemo({ user }: LoginDemoProps) {
       <section className="flex w-full items-center justify-center bg-bg px-6 py-10 font-heading text-fg lg:w-[62.5%]">
         <div className="flex w-full max-w-sm flex-col items-center">
           {/* TODO: replace with real logo (export into /public) */}
-          <div className="mb-4 h-32 w-32 bg-[#d9d9d9]" aria-hidden="true" />
+          <div className="mb-4 relative h-32 w-32">
+            <Image
+              src="/mifi-logo.png"
+              alt="mifi logo"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
       
       {user ? (
             /* ---------- Already signed in ---------- */
