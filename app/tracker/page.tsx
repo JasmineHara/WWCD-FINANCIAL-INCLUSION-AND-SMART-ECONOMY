@@ -14,21 +14,137 @@ interface TrackerFile {
   count: number;
 }
 
+type ReportPeriod = "daily" | "weekly" | "monthly";
+
+type SavedReport = {
+  id: string;
+  key: string;
+  title: string;
+  period: ReportPeriod;
+  summary: string;
+  createdAt: string;
+};
+
+const REPORTS_KEY = "tracker.savedReports";
+
+function readSavedReports(): SavedReport[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const value = localStorage.getItem(REPORTS_KEY);
+    return value ? JSON.parse(value) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeSavedReports(reports: SavedReport[]) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(REPORTS_KEY, JSON.stringify(reports));
+}
+
+function getReportDateKey(period: ReportPeriod) {
+  const now = new Date();
+
+  if (period === "daily") {
+    return `daily-${now.toISOString().slice(0, 10)}`;
+  }
+
+  if (period === "weekly") {
+    const d = new Date(now);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(d.setDate(diff));
+    monday.setHours(0, 0, 0, 0);
+    return `weekly-${monday.toISOString().slice(0, 10)}`;
+  }
+
+  return `monthly-${now.toISOString().slice(0, 7)}`;
+}
+
+function getReportTitle(period: ReportPeriod) {
+  const now = new Date();
+
+  if (period === "daily") {
+    return `Daily Report - ${now.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })}`;
+  }
+
+  if (period === "weekly") {
+    const d = new Date(now);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(d.setDate(diff));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    return `Weekly Report - ${monday.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })} to ${sunday.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })}`;
+  }
+
+  return `Monthly Report - ${now.toLocaleString("en-US", {
+    month: "short",
+    year: "numeric",
+  })}`;
+}
+
 export default function DataTrackerPage() {
   const router = useRouter();
 
-  // Navigation tab state
   const [activeTab, setActiveTab] = useState<"overview" | "transactions" | "reports">("transactions");
-
-  // Backend state (initialized empty)
   const [files, setFiles] = useState<TrackerFile[]>([]);
   const [selectedFileId, setSelectedFileId] = useState<string>("all");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-
-  // Error/Warning text state for reports
   const [reportError, setReportError] = useState<string | null>(null);
+
+  const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
+  const [selectedSavedReportId, setSelectedSavedReportId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSavedReports(readSavedReports());
+  }, []);
+
+  const saveOrOpenReport = (period: ReportPeriod) => {
+    const key = getReportDateKey(period);
+
+    const existing = savedReports.find((report) => report.key === key);
+
+    if (existing) {
+      setSelectedSavedReportId(existing.id);
+      setActiveTab("reports");
+      router.push(`/tracker/report?period=${period}&saved=${existing.id}`);
+      return;
+    }
+
+    const newReport: SavedReport = {
+      id: `report-${Date.now()}`,
+      key,
+      title: getReportTitle(period),
+      period,
+      summary: `Generated ${period} report for this period.`,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updated = [newReport, ...savedReports.filter((report) => report.key !== key)];
+
+    setSavedReports(updated);
+    writeSavedReports(updated);
+
+    setSelectedSavedReportId(newReport.id);
+    setActiveTab("reports");
+    router.push(`/tracker/report?period=${period}&saved=${newReport.id}`);
+  };
 
   useEffect(() => {
     async function fetchTrackerData() {
@@ -78,7 +194,6 @@ export default function DataTrackerPage() {
       <TopBar title="Data Tracker" />
 
       <main className="px-8 py-6 space-y-6 max-w-7xl mx-auto">
-        {/* Subtitle & Action Buttons Row */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Upload your statements and let AI analyze your cash flow.
@@ -98,20 +213,19 @@ export default function DataTrackerPage() {
                 + Upload new document
               </button>
 
-              {/* Safeguarded Report Menu with small text warning */}
               <ViewReportMenu
                 onSelectPeriod={(p) => {
                   if (transactions.length === 0) {
                     setReportError("No files uploaded yet. Please upload a statement first.");
                     return;
                   }
+
                   setReportError(null);
-                  router.push(`/tracker/report?period=${p}`);
+                  saveOrOpenReport(p);
                 }}
               />
             </div>
 
-            {/* Small text error notice */}
             {reportError && (
               <span className="text-xs font-medium text-red-500 pr-1 animate-fadeIn">
                 ⚠️ {reportError}
@@ -120,8 +234,10 @@ export default function DataTrackerPage() {
           </div>
         </div>
 
-        {/* Horizontal Navigation Tabs (Overview / Transactions / Reports) */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-4" style={{ borderColor: "var(--mifi-border, #e7e3d0)" }}>
+        <div
+          className="flex flex-wrap items-center justify-between gap-4 border-b pb-4"
+          style={{ borderColor: "var(--mifi-border, #e7e3d0)" }}
+        >
           <div className="flex items-center gap-1.5 rounded-xl bg-black/5 dark:bg-zinc-800 p-1">
             {(["overview", "transactions", "reports"] as const).map((tab) => (
               <button
@@ -139,8 +255,10 @@ export default function DataTrackerPage() {
             ))}
           </div>
 
-          {/* Active Tracker File Filter */}
-          <div className="flex items-center gap-2.5 bg-surface px-3.5 py-1.5 rounded-xl border shadow-sm" style={{ borderColor: "var(--mifi-border, #e7e3d0)" }}>
+          <div
+            className="flex items-center gap-2.5 bg-surface px-3.5 py-1.5 rounded-xl border shadow-sm"
+            style={{ borderColor: "var(--mifi-border, #e7e3d0)" }}
+          >
             <FolderOpen className="h-4 w-4 text-amber-600 shrink-0" />
             <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">File:</span>
             <select
@@ -159,7 +277,6 @@ export default function DataTrackerPage() {
           </div>
         </div>
 
-        {/* Tab Views */}
         {activeTab === "transactions" && (
           <InventoryTable
             transactions={transactions}
@@ -169,16 +286,58 @@ export default function DataTrackerPage() {
         )}
 
         {activeTab === "overview" && (
-          <div className="p-12 text-center rounded-2xl bg-surface border text-gray-500 shadow-sm" style={{ borderColor: "var(--mifi-border, #e7e3d0)" }}>
+          <div
+            className="p-12 text-center rounded-2xl bg-surface border text-gray-500 shadow-sm"
+            style={{ borderColor: "var(--mifi-border, #e7e3d0)" }}
+          >
             <h3 className="font-semibold text-base mb-1 text-gray-800 dark:text-gray-200">Overview Analytics</h3>
-            <p className="text-sm text-gray-500">Visual breakdowns and cash flow charts will render here once statements are uploaded.</p>
+            <p className="text-sm text-gray-500">
+              Visual breakdowns and cash flow charts will render here once statements are uploaded.
+            </p>
           </div>
         )}
 
         {activeTab === "reports" && (
-          <div className="p-12 text-center rounded-2xl bg-surface border text-gray-500 shadow-sm" style={{ borderColor: "var(--mifi-border, #e7e3d0)" }}>
-            <h3 className="font-semibold text-base mb-1 text-gray-800 dark:text-gray-200">Generated Reports</h3>
-            <p className="text-sm text-gray-500">View and download historical PDF/CSV financial summaries here.</p>
+          <div
+            className="rounded-2xl border bg-surface p-4 shadow-sm"
+            style={{ borderColor: "var(--mifi-border, #e7e3d0)" }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-base text-gray-800 dark:text-gray-200">Generated Reports</h3>
+            </div>
+
+            {savedReports.length === 0 ? (
+              <div className="p-8 text-center text-sm text-gray-500">No saved reports yet.</div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {savedReports.map((report) => (
+                  <button
+                    key={report.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSavedReportId(report.id);
+                      router.push(`/tracker/report?period=${report.period}&saved=${report.id}`);
+                    }}
+                    className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${
+                      selectedSavedReportId === report.id
+                        ? "border-orange-300 bg-orange-50 shadow-sm"
+                        : "border-gray-200 bg-white hover:border-orange-300 hover:shadow-sm"
+                    }`}
+                  >
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-50 text-lg">
+                      📄
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-gray-900">{report.title}</div>
+                      <div className="text-xs text-gray-500">
+                        {report.period} • {new Date(report.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </main>

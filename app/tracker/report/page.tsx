@@ -1,23 +1,25 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { TopBar } from "@/components/tracker/TopBar";
 import { BreakdownChart } from "@/components/report/BreakdownChart";
 import { ChatbotPanel } from "@/components/report/ChatbotPanel";
 import { DownloadReportButton } from "@/components/report/DownloadReportButton";
 import { MetricsCards } from "@/components/report/MetricsCards";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import type { ReportData, ReportPeriod } from "@/types/tracker";
 
 function ReportContent() {
   const searchParams = useSearchParams();
-  const period = (searchParams.get("period") as ReportPeriod) || "monthly";
-  const reportId = searchParams.get("id") || "default-report";
+  const reportRef = useRef<HTMLDivElement | null>(null);
 
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  const savedId = searchParams.get("saved");
+  const period = (searchParams.get("period") as ReportPeriod) || "monthly";
 
   useEffect(() => {
     async function fetchReportData() {
@@ -66,6 +68,11 @@ function ReportContent() {
 
     fetchReportData();
   }, [period]);
+
+  const fullSummary = useMemo(() => {
+    if (!reportData?.summary) return "No report found.";
+    return reportData.summary;
+  }, [reportData]);
 
   if (isLoading) {
     return (
@@ -178,10 +185,10 @@ function ReportContent() {
 
         <div className="lg:col-span-5 sticky top-6 space-y-6 flex flex-col h-[550px]">
           <div className="flex-1">
-            <ChatbotPanel reportId={reportId} />
+            <ChatbotPanel reportId={savedId || "default-report"} />
           </div>
           <div>
-            <DownloadReportButton reportId={reportId} />
+            <DownloadReportButton reportId={savedId || "default-report"} />
           </div>
         </div>
       </main>
