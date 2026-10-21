@@ -109,7 +109,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<UploadRespons
     // 5. Parse the file into rows
     let rows;
     try {
-      rows = await parseStatementFile(buffer, extension as "csv" | "xls" | "xlsx" | "pdf");
+      rows = await parseStatementFile(file, extension as "csv" | "xls" | "xlsx" | "pdf", file.name);
     } catch (parseErr) {
       console.error("[upload] parse failed:", parseErr);
       await markFailed(parseErr instanceof Error ? parseErr.message : String(parseErr));
@@ -130,20 +130,39 @@ export async function POST(req: NextRequest): Promise<NextResponse<UploadRespons
     console.log(rows.slice(0, 3));
     // 6. Bulk insert transactions (in chunks so large files don't hit request limits)
     for (let i = 0; i < rows.length; i += 500) {
-      const chunk = rows.slice(i, i + 500).map((row) => ({
-        user_id: userId,
-        name: row.name ?? row.description ?? "Imported transaction",
-        date: row.date ?? new Date().toISOString().slice(0, 10),
-        price: Number(row.price ?? row.amount ?? 0),
-        value: Number(row.value ?? row.amount ?? 0),
-        type: row.type ?? "expense",
-        category: row.category ?? "General",
-        source_document_id: document.id,
-      }));
+      const chunk = rows.slice(i, i + 500).map((row) => {
+        const rawAmount = row.amount ?? row.price ?? row.value ?? 0;
+        const numericAmount = Number(rawAmount ?? 0);
+        const normalizedType = String(row.type ?? "").toLowerCase();
+        const categoryText = String(row.category ?? "").toLowerCase();
+
+        let inferredType: "income" | "expense" = "income";
+        if (
+          normalizedType.includes("expense") ||
+          normalizedType.includes("debit") ||
+          normalizedType.includes("cost") ||
+          /ingredients|packaging|utilities|labor|maintenance|marketing|rent|supplies/.test(categoryText) ||
+          numericAmount < 0
+        ) {
+          inferredType = "expense";
+        }
+
+        return {
+          user_id: userId,
+          name: row.name ?? row.description ?? "Imported transaction",
+          description: row.description ?? row.name ?? "Imported transaction",
+          amount: Number(numericAmount),
+          date: row.date ?? new Date().toISOString().slice(0, 10),
+          price: Number(numericAmount),
+          value: Number(numericAmount),
+          type: inferredType,
+          category: row.category ?? "General",
+          source_document_id: document.id,
+        };
+      });
       const { error: insertError } = await supabase.from("transactions").insert(chunk);
 
       if (insertError) {
-        // remove any chunks already saved so a failed upload leaves no half-imported data
         await supabase.from("transactions").delete().eq("source_document_id", document.id);
         await markFailed(insertError.message);
         return NextResponse.json(

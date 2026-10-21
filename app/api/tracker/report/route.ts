@@ -20,15 +20,19 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { generateReportFromTransactions } from "@/lib/gemini/client";
 import type { ReportPeriod, ReportResponse, Transaction } from "@/types/tracker";
 
-// TODO: replace with your real auth lookup.
-async function getCurrentUserId(_req: NextRequest): Promise<string> {
-  return "00000000-0000-0000-0000-000000000000";
-}
-
 export async function POST(req: NextRequest): Promise<NextResponse<ReportResponse>> {
   try {
     const supabase = await createSupabaseServerClient();
-    const userId = await getCurrentUserId(req);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json({ success: false, error: "You need to sign in first." }, { status: 401 });
+    }
+
+    const userId = user.id;
     const { period } = (await req.json()) as { period: ReportPeriod };
 
     if (!period || !["daily", "weekly", "monthly"].includes(period)) {
@@ -45,7 +49,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<ReportRespons
       .select("*")
       .eq("user_id", userId)
       .gte("date", from)
-      .lte("date", to);
+      .lte("date", to)
+      .order("date", { ascending: false });
 
     if (txError) {
       return NextResponse.json({ success: false, error: txError.message }, { status: 500 });
@@ -53,19 +58,24 @@ export async function POST(req: NextRequest): Promise<NextResponse<ReportRespons
 
     if (!transactions || transactions.length === 0) {
       return NextResponse.json(
-        { success: false, error: "No transactions found for that period yet." },
+        { success: false, error: `No transactions found for the ${period} period yet.` },
         { status: 404 }
       );
     }
 
-    const generated = await generateReportFromTransactions(
-      transactions as Transaction[],
-      period
-    );
+    const generated = await generateReportFromTransactions(transactions as Transaction[], period);
 
     const { data: saved, error: saveError } = await supabase
       .from("reports")
-      .insert({ user_id: userId, ...generated })
+      .insert({
+        user_id: userId,
+        period,
+        summary: generated.summary,
+        insights: generated.insights,
+        metrics: generated.metrics,
+        breakdown: generated.breakdown,
+        generated_at: generated.generated_at,
+      })
       .select()
       .single();
 
@@ -87,12 +97,38 @@ export async function POST(req: NextRequest): Promise<NextResponse<ReportRespons
 
 function getDateRangeForPeriod(period: ReportPeriod): { from: string; to: string } {
   const now = new Date();
-  const to = now.toISOString().slice(0, 10);
+  const to = new Date(now);
   const from = new Date(now);
 
-  if (period === "daily") from.setDate(now.getDate() - 1);
-  if (period === "weekly") from.setDate(now.getDate() - 7);
-  if (period === "monthly") from.setMonth(now.getMonth() - 1);
+  if (period === "daily") {
+    from.setHours(0, 0, 0, 0);
+    to.setHours(23, 59, 59, 999);
+    return {
+      from: from.toISOString().slice(0, 10),
+      to: to.toISOString().slice(0, 10),
+    };
+  }
 
-  return { from: from.toISOString().slice(0, 10), to };
+  if (period === "weekly") {
+    const day = now.getDay();
+    const diffToMonday = (day + 6) % 7;
+    from.setDate(now.getDate() - diffToMonday);
+    from.setHours(0, 0, 0, 0);
+    to.setDate(from.getDate() + 6);
+    to.setHours(23, 59, 59, 999);
+    return {
+      from: from.toISOString().slice(0, 10),
+      to: to.toISOString().slice(0, 10),
+    };
+  }
+
+  from.setMonth(now.getMonth(), 1);
+  from.setHours(0, 0, 0, 0);
+  to.setMonth(now.getMonth() + 1, 0);
+  to.setHours(23, 59, 59, 999);
+
+  return {
+    from: from.toISOString().slice(0, 10),
+    to: to.toISOString().slice(0, 10),
+  };
 }
