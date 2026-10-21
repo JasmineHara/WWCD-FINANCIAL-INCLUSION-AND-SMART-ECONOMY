@@ -68,7 +68,7 @@ export default function LoginDemo({ user }: LoginDemoProps) {
         showStatus(error.message, true);
       } else {
         showStatus("Logged in successfully.");
-        router.push("/dashboard");
+        router.push("/");
         router.refresh();
       }
     }
