@@ -12,9 +12,12 @@ import {
   ArrowUpRight,
   Sparkles,
 } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function DashboardPage() {
+  const { t, lang } = useLanguage();
   const [userName] = useState("mifi");
+  const isBM = lang === "bm";
 
   // Mock data for weekly cash flow chart (Mon - Sun)
   const weeklyData = [
@@ -32,10 +35,12 @@ export default function DashboardPage() {
       {/* 1. Greeting Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-          Welcome back, {userName}! 👋
+          {isBM ? `Selamat kembali, ${userName}! 👋` : `Welcome back, ${userName}! 👋`}
         </h1>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-          Track cash flow, get AI insights, and connect with business mentors.
+          {isBM
+            ? "Jejaki aliran tunai, dapatkan pandangan AI, dan hubungi mentor perniagaan."
+            : "Track cash flow, get AI insights, and connect with business mentors."}
         </p>
       </div>
 
@@ -48,7 +53,7 @@ export default function DashboardPage() {
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider opacity-90">
-              Total Revenue
+              {isBM ? "Jumlah Hasil" : "Total Revenue"}
             </span>
             <div className="rounded-full bg-white/20 p-2">
               <TrendingUp className="h-4 w-4 text-white" />
@@ -58,7 +63,7 @@ export default function DashboardPage() {
             <div className="text-2xl font-bold">RM 6,700</div>
             <div className="mt-1 flex items-center gap-1 text-xs font-medium opacity-90">
               <span className="bg-white/20 px-1.5 py-0.5 rounded text-[10px] font-bold">+67%</span>
-              <span>vs last week</span>
+              <span>{isBM ? "berbanding minggu lepas" : "vs last week"}</span>
             </div>
           </div>
         </div>
@@ -67,7 +72,7 @@ export default function DashboardPage() {
         <div className="rounded-2xl p-6 bg-surface border shadow-sm flex flex-col justify-between transition hover:shadow-md" style={{ borderColor: "var(--mifi-border, #e3dcc8)" }}>
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              Total Expenses
+              {isBM ? "Jumlah Perbelanjaan" : "Total Expenses"}
             </span>
             <div className="rounded-full bg-red-50 dark:bg-red-950/30 p-2">
               <TrendingDown className="h-4 w-4 text-red-500" />
@@ -77,7 +82,7 @@ export default function DashboardPage() {
             <div className="text-2xl font-bold text-gray-900 dark:text-white">RM 2,210</div>
             <div className="mt-1 flex items-center gap-1 text-xs text-emerald-600 font-medium">
               <span className="bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded text-[10px] font-bold">-12%</span>
-              <span>vs last week</span>
+              <span>{isBM ? "berbanding minggu lepas" : "vs last week"}</span>
             </div>
           </div>
         </div>
@@ -86,7 +91,7 @@ export default function DashboardPage() {
         <div className="rounded-2xl p-6 bg-surface border shadow-sm flex flex-col justify-between transition hover:shadow-md" style={{ borderColor: "var(--mifi-border, #e3dcc8)" }}>
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              Net Profit
+              {isBM ? "Keuntungan Bersih" : "Net Profit"}
             </span>
             <div className="rounded-full bg-amber-50 dark:bg-amber-950/30 p-2">
               <DollarSign className="h-4 w-4 text-amber-600" />
@@ -94,7 +99,7 @@ export default function DashboardPage() {
           </div>
           <div className="mt-4">
             <div className="text-2xl font-bold text-gray-900 dark:text-white">RM 4,490</div>
-            <p className="mt-1 text-xs text-gray-500">Net earnings this period</p>
+            <p className="mt-1 text-xs text-gray-500">{isBM ? "Pendapatan bersih untuk tempoh ini" : "Net earnings this period"}</p>
           </div>
         </div>
 
@@ -105,7 +110,7 @@ export default function DashboardPage() {
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider opacity-90">
-              Net Profit Margin
+              {isBM ? "Margin Keuntungan Bersih" : "Net Profit Margin"}
             </span>
             <div className="rounded-full bg-white/20 p-2">
               <PieChart className="h-4 w-4 text-white" />
@@ -113,7 +118,7 @@ export default function DashboardPage() {
           </div>
           <div className="mt-4">
             <div className="text-3xl font-bold">67%</div>
-            <p className="mt-1 text-xs opacity-90">Healthy cash efficiency</p>
+            <p className="mt-1 text-xs opacity-90">{isBM ? "Kecekapan tunai yang sihat" : "Healthy cash efficiency"}</p>
           </div>
         </div>
       </div>
@@ -123,15 +128,15 @@ export default function DashboardPage() {
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-              Weekly Report & Cash Flow Summary
+              {isBM ? "Ringkasan Laporan Mingguan & Aliran Tunai" : "Weekly Report & Cash Flow Summary"}
             </h2>
-            <p className="text-xs text-gray-500">Cash Flow vs Running Balance (RM)</p>
+            <p className="text-xs text-gray-500">{isBM ? "Aliran Tunai vs Baki Semasa (RM)" : "Cash Flow vs Running Balance (RM)"}</p>
           </div>
           <Link
             href="/tracker"
             className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline"
           >
-            <span>View detailed tracker</span>
+            <span>{isBM ? "Lihat penjejak terperinci" : "View detailed tracker"}</span>
             <ArrowUpRight className="h-3.5 w-3.5" />
           </Link>
         </div>
@@ -160,8 +165,10 @@ export default function DashboardPage() {
         <div className="mt-6 rounded-xl p-4 flex items-start gap-3 bg-amber-50/80 dark:bg-zinc-800/60 border border-amber-200/60 dark:border-zinc-700">
           <Sparkles className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
           <div className="text-sm text-gray-800 dark:text-gray-200">
-            <strong className="font-semibold text-amber-900 dark:text-amber-300">Quick AI Insight: </strong>
-            Your Sunday cash flow spiked by +35% due to weekend orders. Consider shifting inventory restocking to Thursdays to prevent stockouts.
+            <strong className="font-semibold text-amber-900 dark:text-amber-300">{isBM ? "Pandangan AI Pantas: " : "Quick AI Insight: "}</strong>
+            {isBM
+              ? "Aliran tunai Ahad anda melonjak +35% disebabkan pesanan hujung minggu. Pertimbangkan mengubah masa restock inventori ke hari Khamis untuk mengelakkan kehabisan stok."
+              : "Your Sunday cash flow spiked by +35% due to weekend orders. Consider shifting inventory restocking to Thursdays to prevent stockouts."}
           </div>
         </div>
       </div>
@@ -173,16 +180,16 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center gap-2 font-bold text-gray-900 dark:text-white mb-3">
               <Lightbulb className="h-5 w-5 text-amber-500" />
-              <h3>Business Tip of the Day</h3>
+              <h3>{isBM ? "Tip Perniagaan Hari Ini" : "Business Tip of the Day"}</h3>
             </div>
             <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300 list-disc list-inside">
-              <li>Separate business and personal bank accounts to simplify expense tracking and tax filings.</li>
-              <li>Review fixed monthly subscriptions every quarter to cut underutilized costs.</li>
+              <li>{isBM ? "Pisahkan akaun bank perniagaan dan peribadi untuk memudahkan penjejakan perbelanjaan dan fail cukai." : "Separate business and personal bank accounts to simplify expense tracking and tax filings."}</li>
+              <li>{isBM ? "Semak langganan bulanan yang tetap setiap suku tahun untuk mengurangkan kos yang kurang digunakan." : "Review fixed monthly subscriptions every quarter to cut underutilized costs."}</li>
             </ul>
           </div>
           <div className="mt-5 pt-3 border-t border-gray-100 dark:border-zinc-800">
             <Link href="/tips" className="text-xs font-semibold text-amber-600 hover:underline">
-              Read more tips →
+              {isBM ? "Baca lebih banyak tip →" : "Read more tips →"}
             </Link>
           </div>
         </div>
@@ -192,22 +199,22 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center gap-2 font-bold text-gray-900 dark:text-white mb-3">
               <MessageSquare className="h-5 w-5 text-amber-500" />
-              <h3>Community Forum Highlights</h3>
+              <h3>{isBM ? "Sorotan Forum Komuniti" : "Community Forum Highlights"}</h3>
             </div>
             <ul className="space-y-2.5 text-sm text-gray-600 dark:text-gray-300">
               <li className="flex items-center justify-between hover:bg-gray-50 dark:hover:bg-zinc-800 p-1.5 rounded transition">
-                <span>• How are you handling supplier price increases in 2026?</span>
-                <span className="text-xs text-gray-400">12 replies</span>
+                <span>{isBM ? "• Bagaimana anda menangani kenaikan harga pembekal pada 2026?" : "• How are you handling supplier price increases in 2026?"}</span>
+                <span className="text-xs text-gray-400">{isBM ? "12 balasan" : "12 replies"}</span>
               </li>
               <li className="flex items-center justify-between hover:bg-gray-50 dark:hover:bg-zinc-800 p-1.5 rounded transition">
-                <span>• Best digital payment gateways for micro-retailers in MY</span>
-                <span className="text-xs text-gray-400">8 replies</span>
+                <span>{isBM ? "• Gateway pembayaran digital terbaik untuk peruncit mikro di MY" : "• Best digital payment gateways for micro-retailers in MY"}</span>
+                <span className="text-xs text-gray-400">{isBM ? "8 balasan" : "8 replies"}</span>
               </li>
             </ul>
           </div>
           <div className="mt-5 pt-3 border-t border-gray-100 dark:border-zinc-800">
             <Link href="/community" className="text-xs font-semibold text-amber-600 hover:underline">
-              Join community discussions →
+              {isBM ? "Sertai perbincangan komuniti →" : "Join community discussions →"}
             </Link>
           </div>
         </div>

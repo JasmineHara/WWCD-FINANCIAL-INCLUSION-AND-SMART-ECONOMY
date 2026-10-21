@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { TopBar } from "@/components/tracker/TopBar";
+import { useLanguage } from "@/context/LanguageContext";
 import { Send, Bot, User, Sparkles, RefreshCw } from "lucide-react";
 
 interface ChatMessage {
@@ -12,6 +13,8 @@ interface ChatMessage {
 }
 
 export default function AIChatPage() {
+  const { t, lang } = useLanguage();
+  const isBM = lang === "bm";
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -71,7 +74,7 @@ export default function AIChatPage() {
       setMessages((prev) =>
         prev.map((m) =>
           m.id === aiId
-            ? { ...m, text: "Sorry, something went wrong. Please try again." }
+            ? { ...m, text: t.chat.errors.upstream }
             : m
         )
       );
@@ -80,15 +83,11 @@ export default function AIChatPage() {
     }
   };
 
-  const quickPrompts = [
-    "How can I improve my cash flow this month?",
-    "Summarize my recent supplier expenses",
-    "What are my highest expense categories?",
-  ];
+  const quickPrompts = t.chat.suggestions;
 
   return (
     <div className="w-full min-h-screen flex flex-col pb-6">
-      <TopBar title="AI Financial Assistant" />
+      <TopBar title={isBM ? "Pembantu Kewangan AI" : "AI Financial Assistant"} />
 
       <main className="flex-1 px-8 py-6 max-w-4xl w-full mx-auto flex flex-col justify-between space-y-4">
         {/* Chat History Container */}
@@ -103,10 +102,12 @@ export default function AIChatPage() {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                  Welcome to mifi AI Assistant
+                  {isBM ? "Selamat datang ke Pembantu AI mifi" : "Welcome to mifi AI Assistant"}
                 </h3>
                 <p className="text-sm text-gray-500 max-w-md mt-1">
-                  Ask questions about your business cash flow, transaction history, or tips on financial optimization.
+                  {isBM
+                    ? "Tanya soalan tentang aliran tunai perniagaan anda, sejarah transaksi, atau tip pengoptimuman kewangan."
+                    : "Ask questions about your business cash flow, transaction history, or tips on financial optimization."}
                 </p>
               </div>
 
@@ -171,7 +172,7 @@ export default function AIChatPage() {
               <div className="h-8 w-8 rounded-full bg-amber-600 text-white flex items-center justify-center shrink-0">
                 <Bot className="h-4 w-4 animate-spin" />
               </div>
-              <span>AI is thinking...</span>
+              <span>{t.chat.thinking}</span>
             </div>
           )}
 
@@ -189,7 +190,7 @@ export default function AIChatPage() {
         >
           <input
             type="text"
-            placeholder="Ask AI anything about your financials..."
+            placeholder={t.chat.placeholder}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             className="flex-1 bg-transparent px-3 text-sm text-gray-900 dark:text-white focus:outline-none"

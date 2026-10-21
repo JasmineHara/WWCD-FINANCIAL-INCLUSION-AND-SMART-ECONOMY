@@ -1,4 +1,3 @@
-// Sidebar - Keisha
 "use client";
 
 import Link from "next/link";
@@ -14,15 +13,7 @@ import {
   Search,
   Users,
 } from "lucide-react";
-import { useLanguage } from "@/components/LanguageProvider";
-
-const links = [
-  { href: "/", label: "Dashboard", icon: LayoutGrid },
-  { href: "/tracker", label: "Data Tracker", icon: Database },
-  { href: "/tips", label: "Tip of the Day", icon: Lightbulb },
-  { href: "/community", label: "Community Forum", icon: Users },
-  { href: "/mentor/find", label: "Find a Mentor", icon: Search },
-];
+import { useLanguage } from "@/context/LanguageContext";
 
 type SidebarProps = {
   collapsed: boolean;
@@ -31,6 +22,15 @@ type SidebarProps = {
 
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
+  const { t } = useLanguage();
+
+  const links = [
+    { href: "/", label: t.nav.dashboard, icon: LayoutGrid },
+    { href: "/tracker", label: t.nav.dataTracker, icon: Database },
+    { href: "/tips", label: t.nav.tips, icon: Lightbulb },
+    { href: "/community", label: t.nav.communityForum, icon: Users },
+    { href: "/mentor/find", label: t.nav.findMentor, icon: Search },
+  ];
 
   return (
     <aside
@@ -121,7 +121,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       <Link
         href="/mentor"
-        title={collapsed ? "Become a Mentor" : undefined}
+        title={collapsed ? t.nav.becomeMentor : undefined}
         className={`mt-8 flex items-center justify-center rounded-lg bg-light-yellow text-lg text-black transition hover:brightness-95 ${
           collapsed ? "p-3" : "px-4 py-3"
         }`}
@@ -129,7 +129,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {collapsed ? (
           <GraduationCap className="h-6 w-6" aria-hidden="true" />
         ) : null}
-        <span className={collapsed ? "sr-only" : ""}>Become a Mentor</span>
+        <span className={collapsed ? "sr-only" : ""}>{t.nav.becomeMentor}</span>
       </Link>
 
       <Link

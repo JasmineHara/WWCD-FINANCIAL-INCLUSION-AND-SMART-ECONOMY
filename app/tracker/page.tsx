@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { TopBar } from "@/components/tracker/TopBar";
 import { InventoryTable } from "@/components/tracker/InventoryTable";
 import { ViewReportMenu } from "@/components/tracker/ViewReportMenu";
+import { useLanguage } from "@/context/LanguageContext";
 import { FolderOpen } from "lucide-react";
 import type { Transaction } from "@/types/tracker";
 
@@ -99,6 +100,8 @@ function getReportTitle(period: ReportPeriod) {
 
 export default function DataTrackerPage() {
   const router = useRouter();
+  const { t, lang } = useLanguage();
+  const isBM = lang === "bm";
 
   const [activeTab, setActiveTab] = useState<"transactions" | "reports">("transactions");
   const [files, setFiles] = useState<TrackerFile[]>([]);
@@ -191,12 +194,12 @@ export default function DataTrackerPage() {
 
   return (
     <div className="w-full min-h-screen pb-12">
-      <TopBar title="Data Tracker" />
+      <TopBar title={t.page.trackerTitle} />
 
       <main className="px-8 py-6 space-y-6 max-w-7xl mx-auto">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Upload your statements and let AI analyze your cash flow.
+            {t.page.trackerDescription}
           </p>
 
           <div className="flex flex-col items-end gap-1">
@@ -210,13 +213,13 @@ export default function DataTrackerPage() {
                   color: "#ffffff",
                 }}
               >
-                + Upload new document
+                + {t.tracker.uploadDocument}
               </button>
 
               <ViewReportMenu
                 onSelectPeriod={(p) => {
                   if (transactions.length === 0) {
-                    setReportError("No files uploaded yet. Please upload a statement first.");
+                    setReportError(t.tracker.noFilesWarning);
                     return;
                   }
 
@@ -250,7 +253,7 @@ export default function DataTrackerPage() {
                     : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                 }`}
               >
-                {tab}
+                {tab === "transactions" ? t.tracker.transactions : t.tracker.reports}
               </button>
             ))}
           </div>
@@ -260,14 +263,14 @@ export default function DataTrackerPage() {
             style={{ borderColor: "var(--mifi-border, #e7e3d0)" }}
           >
             <FolderOpen className="h-4 w-4 text-amber-600 shrink-0" />
-            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">File:</span>
+            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{t.tracker.fileLabel}</span>
             <select
               value={selectedFileId}
               onChange={(e) => setSelectedFileId(e.target.value)}
               className="rounded-lg border px-2.5 py-1 text-xs bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
               style={{ borderColor: "var(--mifi-border, #e7e3d0)" }}
             >
-              <option value="all">All Files / Combined View</option>
+              <option value="all">{t.tracker.allFiles}</option>
               {files.map((file) => (
                 <option key={file.id} value={file.id}>
                   {file.name} ({file.count} entries)
@@ -291,11 +294,13 @@ export default function DataTrackerPage() {
             style={{ borderColor: "var(--mifi-border, #e7e3d0)" }}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-base text-gray-800 dark:text-gray-200">Generated Reports</h3>
+              <h3 className="font-semibold text-base text-gray-800 dark:text-gray-200">{t.tracker.generatedReports}</h3>
             </div>
 
             {savedReports.length === 0 ? (
-              <div className="p-8 text-center text-sm text-gray-500">No saved reports yet.</div>
+              <div className="p-8 text-center text-sm text-gray-500">
+                {isBM ? "Tiada laporan tersimpan lagi." : "No saved reports yet."}
+              </div>
             ) : (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {savedReports.map((report) => (

@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/context/LanguageContext";
 import type { Transaction } from "@/types/tracker";
 
 interface InventoryTableProps {
@@ -13,6 +14,8 @@ export function InventoryTable({
   aiSummary,
   isLoading = false,
 }: InventoryTableProps) {
+  const { t } = useLanguage();
+
   return (
     <div className="overflow-hidden rounded-xl border shadow-sm" style={{ borderColor: "var(--mifi-border)" }}>
       {/* Table Header Section */}
@@ -20,7 +23,7 @@ export function InventoryTable({
         className="px-6 py-4 text-lg font-bold text-white"
         style={{ backgroundColor: "var(--mifi-table-header-bg)", color: "var(--mifi-table-header-text)" }}
       >
-        My inventory
+        {t.tracker.inventoryTitle}
       </div>
 
       {/* Main Table */}
@@ -34,28 +37,28 @@ export function InventoryTable({
                 color: "var(--mifi-table-subheader-text)",
               }}
             >
-              <th className="px-6 py-3">Date</th>
-              <th className="px-6 py-3">Description</th>
-              <th className="px-6 py-3">Category</th>
-              <th className="px-6 py-3 text-right">Amount</th>
+              <th className="px-6 py-3">{t.tracker.date}</th>
+              <th className="px-6 py-3">{t.tracker.description}</th>
+              <th className="px-6 py-3">{t.tracker.category}</th>
+              <th className="px-6 py-3 text-right">{t.tracker.amount}</th>
             </tr>
           </thead>
           <tbody className="divide-y" style={{ borderColor: "var(--mifi-border)" }}>
             {isLoading ? (
               <tr>
                 <td colSpan={4} className="px-6 py-10 text-center text-gray-500">
-                  Loading transactions...
+                  {t.tracker.loadingTransactions}
                 </td>
               </tr>
             ) : transactions.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-6 py-10 text-center text-gray-500">
-                  No transactions recorded yet. Upload a statement to get started!
+                  {t.tracker.emptyTransactions}
                 </td>
               </tr>
             ) : (
               transactions.map((tx, idx) => {
-                const description = tx.name ?? tx.description ?? "Imported transaction";
+                const description = tx.name ?? tx.description ?? t.tracker.importedTransaction;
                 const rawAmount = tx.price ?? tx.amount ?? tx.value ?? 0;
                 const category = tx.category ?? "General";
 
@@ -101,10 +104,9 @@ export function InventoryTable({
         }}
       >
         <span className="font-bold uppercase tracking-wider text-xs block mb-1 opacity-90">
-          ✨ AI Financial Insight
+          ✨ {t.tracker.aiInsightTitle}
         </span>
-        {aiSummary ??
-          "AI Analysis: Upload your monthly receipts and bank statements to receive personalized cash flow insights and cost savings opportunities."}
+        {aiSummary ?? t.tracker.aiInsightFallback}
       </div>
     </div>
   );

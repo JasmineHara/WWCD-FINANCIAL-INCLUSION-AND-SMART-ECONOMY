@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useLanguage } from "@/context/LanguageContext";
 import type { ReportPeriod } from "@/types/tracker";
 
 interface ViewReportMenuProps {
@@ -9,13 +10,14 @@ interface ViewReportMenuProps {
 }
 
 export function ViewReportMenu({ onSelectPeriod, isGenerating = false }: ViewReportMenuProps) {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const periods: { label: string; value: ReportPeriod }[] = [
-    { label: "Daily", value: "daily" as ReportPeriod },
-    { label: "Weekly", value: "weekly" as ReportPeriod },
-    { label: "Monthly", value: "monthly" as ReportPeriod },
+    { label: t.tracker.reportMenuDaily, value: "daily" as ReportPeriod },
+    { label: t.tracker.reportMenuWeekly, value: "weekly" as ReportPeriod },
+    { label: t.tracker.reportMenuMonthly, value: "monthly" as ReportPeriod },
   ];
 
   useEffect(() => {
@@ -40,7 +42,7 @@ export function ViewReportMenu({ onSelectPeriod, isGenerating = false }: ViewRep
           color: "var(--mifi-accent-secondary-text)",
         }}
       >
-        <span>{isGenerating ? "Generating Report..." : "View Report"}</span>
+        <span>{isGenerating ? t.tracker.reportMenuGenerating : t.tracker.reportMenuView}</span>
         <span className="text-xs">▼</span>
       </button>
 

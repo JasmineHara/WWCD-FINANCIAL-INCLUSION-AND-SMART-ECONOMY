@@ -29,7 +29,7 @@ export default function Header() {
         title={lang === "en" ? "Switch to Bahasa Malaysia" : "Tukar ke Bahasa Inggeris"}
       >
         <Languages className="h-6 w-6 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-        <span className="text-xs font-bold uppercase">{lang}</span>
+        <span className="text-xs font-bold uppercase">{lang === "en" ? "EN" : "BM"}</span>
       </button>
 
       {/* Theme Toggle Button */}

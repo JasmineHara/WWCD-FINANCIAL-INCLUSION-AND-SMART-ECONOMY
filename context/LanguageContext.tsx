@@ -30,7 +30,17 @@ function getInitialLanguage(): Language {
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Language>(getInitialLanguage);
+  const [lang, setLangState] = useState<Language>(DEFAULT_LANGUAGE);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("language");
+    if (saved === "en" || saved === "bm") {
+      setLangState(saved);
+      return;
+    }
+
+    setLangState(DEFAULT_LANGUAGE);
+  }, []);
 
   useEffect(() => {
     document.documentElement.lang = lang === "bm" ? "ms" : "en";
