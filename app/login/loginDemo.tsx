@@ -151,6 +151,7 @@ export default function LoginDemo({ user }: LoginDemoProps) {
               src="/mifi-logo.png"
               alt="mifi logo"
               fill
+              sizes="144px"
               className="object-contain filter drop-shadow-md"
               priority
             />

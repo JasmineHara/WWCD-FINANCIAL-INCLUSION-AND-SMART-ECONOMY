@@ -50,6 +50,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 src="/mifi-logo.png"
                 alt="mifi logo"
                 fill
+                sizes="48px"
                 className="object-contain filter drop-shadow-md"
                 priority
               />
@@ -64,6 +65,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
               src="/mifi-logo.png"
               alt="mifi logo"
               fill
+              sizes="48px"
               className="object-contain filter drop-shadow-md"
               priority
             />
@@ -142,6 +144,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
       src="/mifi-logo.png"
       alt="mifi AI Assistant"
       fill
+      sizes="48px"
       className="object-contain filter drop-shadow-md"
     />
   </div>
