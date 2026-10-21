@@ -100,7 +100,7 @@ function getReportTitle(period: ReportPeriod) {
 export default function DataTrackerPage() {
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<"overview" | "transactions" | "reports">("transactions");
+  const [activeTab, setActiveTab] = useState<"transactions" | "reports">("transactions");
   const [files, setFiles] = useState<TrackerFile[]>([]);
   const [selectedFileId, setSelectedFileId] = useState<string>("all");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -204,7 +204,7 @@ export default function DataTrackerPage() {
               <button
                 type="button"
                 onClick={() => router.push("/tracker/upload")}
-                className="rounded-full px-5 py-2.5 text-sm font-semibold transition hover:brightness-95 active:scale-95"
+                className="rounded-full px-5 py-2.5 text-sm font-semibold transition hover:brightness-95 active:scale-95 cursor-pointer"
                 style={{
                   backgroundColor: "var(--color-primary, #f76f54)",
                   color: "#ffffff",
@@ -239,12 +239,12 @@ export default function DataTrackerPage() {
           style={{ borderColor: "var(--mifi-border, #e7e3d0)" }}
         >
           <div className="flex items-center gap-1.5 rounded-xl bg-black/5 dark:bg-zinc-800 p-1">
-            {(["overview", "transactions", "reports"] as const).map((tab) => (
+            {(["transactions", "reports"] as const).map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold capitalize transition ${
+                className={`rounded-lg px-4 py-2 text-sm font-semibold capitalize transition cursor-pointer ${
                   activeTab === tab
                     ? "bg-white dark:bg-zinc-900 shadow-sm text-gray-900 dark:text-white"
                     : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
@@ -285,18 +285,6 @@ export default function DataTrackerPage() {
           />
         )}
 
-        {activeTab === "overview" && (
-          <div
-            className="p-12 text-center rounded-2xl bg-surface border text-gray-500 shadow-sm"
-            style={{ borderColor: "var(--mifi-border, #e7e3d0)" }}
-          >
-            <h3 className="font-semibold text-base mb-1 text-gray-800 dark:text-gray-200">Overview Analytics</h3>
-            <p className="text-sm text-gray-500">
-              Visual breakdowns and cash flow charts will render here once statements are uploaded.
-            </p>
-          </div>
-        )}
-
         {activeTab === "reports" && (
           <div
             className="rounded-2xl border bg-surface p-4 shadow-sm"
@@ -318,7 +306,7 @@ export default function DataTrackerPage() {
                       setSelectedSavedReportId(report.id);
                       router.push(`/tracker/report?period=${report.period}&saved=${report.id}`);
                     }}
-                    className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${
+                    className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition cursor-pointer ${
                       selectedSavedReportId === report.id
                         ? "border-orange-300 bg-orange-50 shadow-sm"
                         : "border-gray-200 bg-white hover:border-orange-300 hover:shadow-sm"
