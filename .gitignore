@@ -40,3 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 /nbproject/private/
+
+# Tool & Agent Configs
+.claude/
+.cursor/
+.devin/
+agents/
